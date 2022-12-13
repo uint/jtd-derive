@@ -1,6 +1,7 @@
 # jtd-autogen
 
-Generate JSON Typedef schemas from Rust types.
+Generate [JSON Type Definition](https://jsontypedef.com/) schemas from Rust
+types.
 
 ## License
 
