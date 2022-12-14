@@ -10,26 +10,26 @@ use serde::Serialize;
 
 /// The top level of a Typedef schema.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize)]
-struct RootSchema {
+pub struct RootSchema {
     #[serde(skip_serializing_if = "HashMap::is_empty")]
-    definitions: HashMap<&'static str, Schema>,
+    pub definitions: HashMap<&'static str, Schema>,
     #[serde(flatten)]
-    schema: Schema,
+    pub schema: Schema,
 }
 
 /// A Typedef schema.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize)]
-struct Schema {
+pub struct Schema {
     #[serde(skip_serializing_if = "Metadata::is_empty")]
-    metadata: Metadata,
+    pub metadata: Metadata,
     #[serde(flatten)]
-    ty: SchemaType,
+    pub ty: SchemaType,
     #[serde(skip_serializing_if = "is_false")]
-    nullable: bool,
+    pub nullable: bool,
 }
 
 impl Schema {
-    fn empty() -> Self {
+    pub fn empty() -> Self {
         Self {
             metadata: Metadata::default(),
             ty: SchemaType::Empty,
@@ -45,7 +45,7 @@ fn is_false(v: &bool) -> bool {
 /// The 8 "forms" a schema can take.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 #[serde(untagged)]
-enum SchemaType {
+pub enum SchemaType {
     Empty,
     Type {
         r#type: TypeSchema,
@@ -83,7 +83,7 @@ enum SchemaType {
 /// Typedef primitive types. See [the Typedef docs entry](https://jsontypedef.com/docs/jtd-in-5-minutes/#type-schemas).
 #[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 #[serde(rename_all = "snake_case")]
-enum TypeSchema {
+pub enum TypeSchema {
     Boolean,
     String,
     Timestamp,
@@ -99,7 +99,7 @@ enum TypeSchema {
 
 /// Schema metadata.
 #[derive(Default, Debug, PartialEq, Eq, Clone, Serialize)]
-struct Metadata(HashMap<&'static str, serde_json::Value>);
+pub struct Metadata(HashMap<&'static str, serde_json::Value>);
 
 impl Metadata {
     pub fn from_map(m: impl Into<HashMap<&'static str, serde_json::Value>>) -> Self {
@@ -326,9 +326,9 @@ mod tests {
                     "name": { "type": "string" },
                     "isAdmin": { "type": "boolean" }
                 },
-            "optionalProperties": {
-                "middleName": { "type": "string" }
-            },
+                "optionalProperties": {
+                    "middleName": { "type": "string" }
+                },
                 "additionalProperties": true
             })
         )
