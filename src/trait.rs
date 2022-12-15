@@ -76,7 +76,7 @@ impl_primitives! {
 impl<T: JsonTypedef> JsonTypedef for Option<T> {
     fn schema() -> Schema {
         // an argument could be made this should error on `Option<Option<T>>`, but
-        // we're trying to follow in serde's footsteps
+        // we're trying to follow serde's footsteps
         let mut schema = T::schema();
         schema.nullable = true;
         schema
@@ -216,13 +216,3 @@ macro_rules! impl_range {
 }
 
 impl_range!(Range<T>, RangeInclusive<T>);
-
-// Can't/won't support:
-// * tuples
-// * bound - one variant gets serialized as a string, the others as objects - typedef can't support that
-// * Duration - uses u64
-// * SystemTime - same reason as above
-// * PhantomData - seems silly to try to serialize that
-// * Result - Ok and Err variants could have different
-//   forms + probably should discourage leaking Rust error types across API boundaries anyway
-//
