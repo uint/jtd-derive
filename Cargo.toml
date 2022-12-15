@@ -1,18 +1,18 @@
 [workspace]
 
 [package]
-name = "jtd-gen"
+name = "jtd-derive"
 description = "Generate JSON Typedef schemas from Rust types"
 version = "0.1.0"
 edition = "2021"
 authors = ["Tomasz Kurcz"]
 license = "MIT"
-repository = "https://github.com/uint/jtd-gen"
-documentation = "https://docs.rs/jtd-gen"
+repository = "https://github.com/uint/jtd-derive"
+documentation = "https://docs.rs/jtd-derive"
 categories = ["encoding"]
 keywords = ["schema", "codegen", "json"]
 
 [dependencies]
-jtd-gen-macros = { version = "=0.1.0", path = "macros" }
+jtd-derive-macros = { version = "=0.1.0", path = "macros" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

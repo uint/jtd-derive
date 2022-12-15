@@ -1,4 +1,4 @@
-# jtd-autogen
+# jtd-derive
 
 Generate [JSON Type Definition](https://jsontypedef.com/) schemas from Rust
 types.

@@ -1,12 +1,12 @@
 [package]
-name = "jtd-gen-macros"
+name = "jtd-derive-macros"
 description = "Proc macros for jtd-gen"
 version = "0.1.0"
 edition = "2021"
 authors = ["Tomasz Kurcz"]
 license = "MIT"
-repository = "https://github.com/uint/jtd-gen"
-documentation = "https://docs.rs/jtd-gen-macros"
+repository = "https://github.com/uint/jtd-derive"
+documentation = "https://docs.rs/jtd-derive-macros"
 categories = ["encoding"]
 keywords = ["schema", "codegen", "json"]
 
