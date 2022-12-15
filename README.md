@@ -9,11 +9,11 @@ WIP - it doesn't work yet.
 
 ## Types `serde` supports, but we don't
 
-- tuples - serialized as potentially heterogenous arrays, but typedef only
+- tuples - serialized as potentially heterogenous arrays, but _Typedef_ only
   supports homogenous ones.
 - `Bound` - one variant gets serialized as a string, the others as objects.
   Typedef can't support that kind of decadent fancy.
-- `Duration` - uses `u64`, which is unsupported by Typedef.
+- `Duration` - uses `u64`, which is unsupported by _Typedef_.
 - `SystemTime` - same reason as above.
 - `PhantomData` - seems silly to try to serialize that! Also no good way to
   specify a null literal in the schema.
