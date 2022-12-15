@@ -170,7 +170,7 @@ impl_transparent!(
 macro_rules! impl_transparent_lifetime {
 	($($in:ty),*) => {
 		$(
-            impl<'a, T: JsonTypedef> JsonTypedef for $in {
+            impl<'a, T: JsonTypedef + ?Sized> JsonTypedef for $in {
                 fn schema() -> Schema {
                     T::schema()
                 }

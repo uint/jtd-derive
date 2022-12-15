@@ -20,3 +20,24 @@ fn foo() {
         }}
     );
 }
+
+#[derive(JsonTypedef)]
+#[allow(dead_code)]
+struct FooWithGenerics<'a, T, const N: usize> {
+    bar: &'a str,
+    baz: [T; N],
+}
+
+#[test]
+fn foo2() {
+    assert_eq!(
+        serde_json::to_value(FooWithGenerics::<'_, u32, 2>::schema()).unwrap(),
+        serde_json::json! {{
+            "properties": {
+                "bar": { "type": "string" },
+                "baz": { "elements": { "type": "uint32" } }
+            },
+            "additionalProperties": true
+        }}
+    );
+}
