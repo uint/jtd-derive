@@ -10,4 +10,10 @@ documentation = "https://docs.rs/jtd-derive-macros"
 categories = ["encoding"]
 keywords = ["schema", "codegen", "json"]
 
+[lib]
+proc-macro = true
+
 [dependencies]
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "1", features = ["full", "printing", "extra-traits"] }

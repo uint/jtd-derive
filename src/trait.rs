@@ -12,7 +12,9 @@ use std::sync::{atomic, Mutex, RwLock};
 
 use crate::schema::{Schema, SchemaType, TypeSchema};
 
-trait JsonTypedef {
+pub use jtd_derive_macros::JsonTypedef;
+
+pub trait JsonTypedef {
     fn schema() -> Schema;
 }
 
