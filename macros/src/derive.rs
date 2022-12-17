@@ -1,12 +1,9 @@
 mod context;
 
-use syn::{
-    parse_quote, DataStruct, DeriveInput, ExprStruct, Fields, GenericParam, Generics, ItemImpl,
-};
+use proc_macro2::TokenStream;
+use syn::{parse_quote, DataStruct, DeriveInput, Fields, GenericParam, Generics, ItemImpl};
 
 use self::context::Context;
-
-// TODO: support generics, lifetimes, const generics
 
 pub fn derive(input: DeriveInput) -> ItemImpl {
     let ctx = context::get_context(&input);
@@ -39,23 +36,31 @@ pub fn derive(input: DeriveInput) -> ItemImpl {
     }
 }
 
-pub fn construct_struct(_ctx: &Context, s: DataStruct) -> ExprStruct {
-    if let Fields::Named(fields) = s.fields {
-        let (idents, types): (Vec<_>, Vec<_>) =
-            fields.named.iter().map(|f| (&f.ident, &f.ty)).unzip();
+pub fn construct_struct(_ctx: &Context, s: DataStruct) -> TokenStream {
+    match s.fields {
+        Fields::Named(fields) => {
+            let (idents, types): (Vec<_>, Vec<_>) =
+                fields.named.iter().map(|f| (&f.ident, &f.ty)).unzip();
 
-        parse_quote! {
-            Schema {
-                ty: SchemaType::Properties {
-                    properties: [#((stringify!(#idents), <#types as JsonTypedef>::schema())),*].into(),
-                    optional_properties: [].into(),
-                    additional_properties: true,
-                },
-                ..::jtd_derive::schema::Schema::empty()
+            parse_quote! {
+                Schema {
+                    ty: SchemaType::Properties {
+                        properties: [#((stringify!(#idents), <#types as JsonTypedef>::schema())),*].into(),
+                        optional_properties: [].into(),
+                        additional_properties: true,
+                    },
+                    ..::jtd_derive::schema::Schema::empty()
+                }
             }
         }
-    } else {
-        // TODO: support it if it looks like a newtype (one field)
-        panic!("unit and tuple structs are unsupported")
+        Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
+            let ty = &fields.unnamed[0].ty;
+
+            parse_quote! {
+                <#ty as JsonTypedef>::schema()
+            }
+        }
+        Fields::Unnamed(_) => panic!("only tuple structs with one field are supported"),
+        _ => panic!("unit structs are unsupported"),
     }
 }
