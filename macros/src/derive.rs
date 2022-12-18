@@ -1,7 +1,9 @@
 mod context;
 
 use proc_macro2::TokenStream;
-use syn::{parse_quote, DataStruct, DeriveInput, Fields, GenericParam, Generics, ItemImpl};
+use syn::{
+    parse_quote, DataEnum, DataStruct, DeriveInput, Fields, GenericParam, Generics, ItemImpl,
+};
 
 use self::context::Context;
 
@@ -20,8 +22,8 @@ pub fn derive(input: DeriveInput) -> ItemImpl {
     }
 
     let res = match input.data {
-        syn::Data::Struct(s) => construct_struct(&ctx, s),
-        syn::Data::Enum(_) => todo!(),
+        syn::Data::Struct(s) => gen_struct_schema(&ctx, s),
+        syn::Data::Enum(e) => gen_enum_schema(&ctx, e),
         syn::Data::Union(_) => panic!("jtd-derive does not support unions"),
     };
 
@@ -36,7 +38,7 @@ pub fn derive(input: DeriveInput) -> ItemImpl {
     }
 }
 
-pub fn construct_struct(_ctx: &Context, s: DataStruct) -> TokenStream {
+pub fn gen_struct_schema(_ctx: &Context, s: DataStruct) -> TokenStream {
     match s.fields {
         Fields::Named(fields) => {
             let (idents, types): (Vec<_>, Vec<_>) =
@@ -63,4 +65,46 @@ pub fn construct_struct(_ctx: &Context, s: DataStruct) -> TokenStream {
         Fields::Unnamed(_) => panic!("only tuple structs with one field are supported"),
         _ => panic!("unit structs are unsupported"),
     }
+}
+
+pub fn gen_enum_schema(_ctx: &Context, e: DataEnum) -> TokenStream {
+    match enum_kind(&e) {
+        EnumKind::UnitLikeVariants => todo!(),
+        EnumKind::CstructLikeVariants => todo!(),
+        EnumKind::SomeTupleVariants => panic!("tuple variants are unsupported"),
+        EnumKind::Mixed => {
+            panic!("all enum variants must be of the same kind (unit-like or cstruct-like)")
+        }
+        EnumKind::Empty => {
+            panic!("enums with no variants are unsupported)")
+        }
+    }
+}
+
+fn enum_kind(e: &DataEnum) -> EnumKind {
+    // (named, unit)
+    let mut counts = (0, 0);
+
+    for variant in &e.variants {
+        match variant.fields {
+            Fields::Named(_) => counts.0 += 1,
+            Fields::Unit => counts.1 += 1,
+            Fields::Unnamed(_) => return EnumKind::SomeTupleVariants,
+        }
+    }
+
+    match counts {
+        (0, 0) => EnumKind::Empty,
+        (0, _) => EnumKind::UnitLikeVariants,
+        (_, 0) => EnumKind::CstructLikeVariants,
+        _ => EnumKind::Mixed,
+    }
+}
+
+enum EnumKind {
+    UnitLikeVariants,
+    CstructLikeVariants,
+    SomeTupleVariants,
+    Mixed,
+    Empty,
 }
