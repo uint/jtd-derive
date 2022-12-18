@@ -1,0 +1,15 @@
+error: tuple variants are unsupported
+ --> tests/derive_errors/enum/tuple_variants.rs:1:10
+  |
+1 | #[derive(jtd_derive::JsonTypedef)]
+  |          ^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the derive macro `jtd_derive::JsonTypedef` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: tuple variants are unsupported
+ --> tests/derive_errors/enum/tuple_variants.rs:7:10
+  |
+7 | #[derive(jtd_derive::JsonTypedef)]
+  |          ^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the derive macro `jtd_derive::JsonTypedef` (in Nightly builds, run with -Z macro-backtrace for more info)

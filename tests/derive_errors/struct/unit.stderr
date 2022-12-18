@@ -1,0 +1,7 @@
+error: unit structs are unsupported
+ --> tests/derive_errors/struct/unit.rs:1:10
+  |
+1 | #[derive(jtd_derive::JsonTypedef)]
+  |          ^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the derive macro `jtd_derive::JsonTypedef` (in Nightly builds, run with -Z macro-backtrace for more info)

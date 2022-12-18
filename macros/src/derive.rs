@@ -24,7 +24,7 @@ pub fn derive(input: DeriveInput) -> ItemImpl {
     let res = match input.data {
         syn::Data::Struct(s) => gen_struct_schema(&ctx, s),
         syn::Data::Enum(e) => gen_enum_schema(&ctx, e),
-        syn::Data::Union(_) => panic!("jtd-derive does not support unions"),
+        syn::Data::Union(_) => parse_quote! {compile_error!("jtd-derive does not support unions")},
     };
 
     parse_quote! {
@@ -40,6 +40,10 @@ pub fn derive(input: DeriveInput) -> ItemImpl {
 
 pub fn gen_struct_schema(_ctx: &Context, s: DataStruct) -> TokenStream {
     match s.fields {
+        Fields::Named(_) if s.fields.len() == 0 => {
+            parse_quote! {compile_error!("empty cstruct-like structs are unsupported")}
+        }
+
         Fields::Named(fields) => {
             let (idents, types): (Vec<_>, Vec<_>) =
                 fields.named.iter().map(|f| (&f.ident, &f.ty)).unzip();
@@ -62,8 +66,10 @@ pub fn gen_struct_schema(_ctx: &Context, s: DataStruct) -> TokenStream {
                 <#ty as JsonTypedef>::schema()
             }
         }
-        Fields::Unnamed(_) => panic!("only tuple structs with one field are supported"),
-        _ => panic!("unit structs are unsupported"),
+        Fields::Unnamed(_) => {
+            parse_quote! {compile_error!("tuple structs are only supported if they have exactly one field")}
+        }
+        _ => parse_quote! {compile_error!("unit structs are unsupported")},
     }
 }
 
@@ -71,12 +77,14 @@ pub fn gen_enum_schema(_ctx: &Context, e: DataEnum) -> TokenStream {
     match enum_kind(&e) {
         EnumKind::UnitLikeVariants => todo!(),
         EnumKind::CstructLikeVariants => todo!(),
-        EnumKind::SomeTupleVariants => panic!("tuple variants are unsupported"),
+        EnumKind::SomeTupleVariants => {
+            parse_quote! {compile_error!("tuple variants are unsupported")}
+        }
         EnumKind::Mixed => {
-            panic!("all enum variants must be of the same kind (unit-like or cstruct-like)")
+            parse_quote! {compile_error!("all enum variants must be of the same kind (unit-like or cstruct-like)")}
         }
         EnumKind::Empty => {
-            panic!("enums with no variants are unsupported)")
+            parse_quote! {compile_error!("enums with no variants are unsupported")}
         }
     }
 }
