@@ -1,7 +1,5 @@
-error: enums with no variants are unsupported
- --> tests/derive_errors/enum/empty.rs:1:10
+error: jtd-derive does not support enums with no variants
+ --> tests/derive_errors/enum/empty.rs:2:6
   |
-1 | #[derive(jtd_derive::JsonTypedef)]
-  |          ^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: this error originates in the derive macro `jtd_derive::JsonTypedef` (in Nightly builds, run with -Z macro-backtrace for more info)
+2 | enum Empty {}
+  |      ^^^^^

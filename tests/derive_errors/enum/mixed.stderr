@@ -1,7 +1,5 @@
-error: all enum variants must be of the same kind (unit-like or cstruct-like)
- --> tests/derive_errors/enum/mixed.rs:1:10
+error: jtd-derive requires all enum variants to be of the same kind (unit-like or cstruct-like)
+ --> tests/derive_errors/enum/mixed.rs:2:6
   |
-1 | #[derive(jtd_derive::JsonTypedef)]
-  |          ^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: this error originates in the derive macro `jtd_derive::JsonTypedef` (in Nightly builds, run with -Z macro-backtrace for more info)
+2 | enum Mixed {
+  |      ^^^^^

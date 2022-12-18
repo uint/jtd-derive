@@ -1,7 +1,5 @@
-error: tuple structs are only supported if they have exactly one field
- --> tests/derive_errors/struct/tuple_with_wrong_number_of_fields.rs:1:10
+error: jtd-derive only supports tuple structs if they have exactly one field
+ --> tests/derive_errors/struct/tuple_with_wrong_number_of_fields.rs:2:8
   |
-1 | #[derive(jtd_derive::JsonTypedef)]
-  |          ^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: this error originates in the derive macro `jtd_derive::JsonTypedef` (in Nightly builds, run with -Z macro-backtrace for more info)
+2 | struct Tuple(u32, String);
+  |        ^^^^^

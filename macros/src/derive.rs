@@ -1,8 +1,9 @@
 mod context;
 
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
+use quote::quote_spanned;
 use syn::{
-    parse_quote, DataEnum, DataStruct, DeriveInput, Fields, GenericParam, Generics, ItemImpl,
+    parse_quote, DataEnum, DataStruct, DeriveInput, Fields, GenericParam, Generics, Ident, ItemImpl,
 };
 
 use self::context::Context;
@@ -22,9 +23,11 @@ pub fn derive(input: DeriveInput) -> ItemImpl {
     }
 
     let res = match input.data {
-        syn::Data::Struct(s) => gen_struct_schema(&ctx, s),
-        syn::Data::Enum(e) => gen_enum_schema(&ctx, e),
-        syn::Data::Union(_) => parse_quote! {compile_error!("jtd-derive does not support unions")},
+        syn::Data::Struct(s) => gen_struct_schema(&ctx, &ident, s),
+        syn::Data::Enum(e) => gen_enum_schema(&ctx, &ident, e),
+        syn::Data::Union(_) => {
+            quote_spanned! {ident.span()=> compile_error!("jtd-derive does not support unions")}
+        }
     };
 
     parse_quote! {
@@ -38,10 +41,10 @@ pub fn derive(input: DeriveInput) -> ItemImpl {
     }
 }
 
-pub fn gen_struct_schema(_ctx: &Context, s: DataStruct) -> TokenStream {
+pub fn gen_struct_schema(_ctx: &Context, ident: &Ident, s: DataStruct) -> TokenStream {
     match s.fields {
         Fields::Named(_) if s.fields.len() == 0 => {
-            parse_quote! {compile_error!("empty cstruct-like structs are unsupported")}
+            quote_spanned! {ident.span()=> compile_error!("jtd-derive does not support cstruct-like structs")}
         }
 
         Fields::Named(fields) => {
@@ -67,24 +70,26 @@ pub fn gen_struct_schema(_ctx: &Context, s: DataStruct) -> TokenStream {
             }
         }
         Fields::Unnamed(_) => {
-            parse_quote! {compile_error!("tuple structs are only supported if they have exactly one field")}
+            quote_spanned! {ident.span()=> compile_error!("jtd-derive only supports tuple structs if they have exactly one field")}
         }
-        _ => parse_quote! {compile_error!("unit structs are unsupported")},
+        _ => {
+            quote_spanned! {ident.span()=> compile_error!("jtd-derive does not support unit structs")}
+        }
     }
 }
 
-pub fn gen_enum_schema(_ctx: &Context, e: DataEnum) -> TokenStream {
+pub fn gen_enum_schema(_ctx: &Context, ident: &Ident, e: DataEnum) -> TokenStream {
     match enum_kind(&e) {
         EnumKind::UnitLikeVariants => todo!(),
         EnumKind::CstructLikeVariants => todo!(),
-        EnumKind::SomeTupleVariants => {
-            parse_quote! {compile_error!("tuple variants are unsupported")}
+        EnumKind::SomeTupleVariants(span) => {
+            quote_spanned! {span=> compile_error!("jtd-derive does not support tuple variants")}
         }
         EnumKind::Mixed => {
-            parse_quote! {compile_error!("all enum variants must be of the same kind (unit-like or cstruct-like)")}
+            quote_spanned! {ident.span()=> compile_error!("jtd-derive requires all enum variants to be of the same kind (unit-like or cstruct-like)")}
         }
         EnumKind::Empty => {
-            parse_quote! {compile_error!("enums with no variants are unsupported")}
+            quote_spanned! {ident.span()=> compile_error!("jtd-derive does not support enums with no variants")}
         }
     }
 }
@@ -97,7 +102,7 @@ fn enum_kind(e: &DataEnum) -> EnumKind {
         match variant.fields {
             Fields::Named(_) => counts.0 += 1,
             Fields::Unit => counts.1 += 1,
-            Fields::Unnamed(_) => return EnumKind::SomeTupleVariants,
+            Fields::Unnamed(_) => return EnumKind::SomeTupleVariants(variant.ident.span()),
         }
     }
 
@@ -112,7 +117,7 @@ fn enum_kind(e: &DataEnum) -> EnumKind {
 enum EnumKind {
     UnitLikeVariants,
     CstructLikeVariants,
-    SomeTupleVariants,
+    SomeTupleVariants(Span),
     Mixed,
     Empty,
 }

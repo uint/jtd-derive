@@ -1,15 +1,11 @@
-error: tuple variants are unsupported
- --> tests/derive_errors/enum/tuple_variants.rs:1:10
+error: jtd-derive does not support tuple variants
+ --> tests/derive_errors/enum/tuple_variants.rs:3:5
   |
-1 | #[derive(jtd_derive::JsonTypedef)]
-  |          ^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: this error originates in the derive macro `jtd_derive::JsonTypedef` (in Nightly builds, run with -Z macro-backtrace for more info)
+3 |     Foo(u32),
+  |     ^^^
 
-error: tuple variants are unsupported
- --> tests/derive_errors/enum/tuple_variants.rs:7:10
-  |
-7 | #[derive(jtd_derive::JsonTypedef)]
-  |          ^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: this error originates in the derive macro `jtd_derive::JsonTypedef` (in Nightly builds, run with -Z macro-backtrace for more info)
+error: jtd-derive does not support tuple variants
+  --> tests/derive_errors/enum/tuple_variants.rs:10:5
+   |
+10 |     Bar(u32),
+   |     ^^^

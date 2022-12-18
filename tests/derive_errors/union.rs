@@ -1,4 +1,6 @@
 #[derive(jtd_derive::JsonTypedef)]
-struct Tuple(u32, String);
+union Foo {
+    bar: u32,
+}
 
 fn main() {}

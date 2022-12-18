@@ -1,0 +1,5 @@
+error: jtd-derive does not support unions
+ --> tests/derive_errors/union.rs:2:7
+  |
+2 | union Foo {
+  |       ^^^
