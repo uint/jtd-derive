@@ -10,7 +10,8 @@ WIP - not very useful yet
 ## Why?
 
 Because _Typedef_ seems really nice in how minimal and unambiguous it is. In
-particular, systems that generate JSON-based APIs and related IDL files (with
+particular, systems that generate JSON-based APIs and related
+[IDL](https://en.wikipedia.org/wiki/Interface_description_language) files (with
 the expectation those will be used for code generation) could use something like
 this. Feature bloat is arguably not a good idea in those sensitive spots.
 
@@ -34,9 +35,11 @@ specifically APIs built on top of HTTP (often called "RESTful APIs", though
 [that's usually quite silly](https://medium.com/@andrea.chiarelli/please-dont-call-them-restful-d2465527b5c)),
 with its paths and methods and all the doodads. In that way, it already has a
 way of describing your API's endpoints, whereas if you want to use _Typedef_,
-you'll want to embed it in some custom IDL of your design.
+you'll want to embed it in some custom
+[IDL](https://en.wikipedia.org/wiki/Interface_description_language) of your
+design.
 
-If you're building one of those, `OpenAPI` might be worth a look. It seems
+If you're building a "web" api, `OpenAPI` might be worth a look. It seems
 complex, but maybe it will make sense for your use case.
 
 If you're not building a "web" API and aren't constrained by the HTTP
