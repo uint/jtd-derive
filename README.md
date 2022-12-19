@@ -1,13 +1,11 @@
-# jtd-derive
-
 Generate [JSON Type Definition](https://jsontypedef.com/) schemas from Rust
 types.
 
-## Status
+# Status
 
 WIP - not very useful yet
 
-## Why?
+# Why?
 
 Because _Typedef_ seems really nice in how minimal and unambiguous it is. In
 particular, systems that generate JSON-based APIs and related
@@ -15,9 +13,13 @@ particular, systems that generate JSON-based APIs and related
 the expectation those will be used for code generation) could use something like
 this. Feature bloat is arguably not a good idea in those sensitive spots.
 
-## Alternatives
+This crate hopefully makes it a little nicer in that Rust projects can keep
+language-agnostic type definitions as Rust code rather than a separate thing
+with a different syntax.
 
-### JSON Schema
+# Alternatives
+
+## JSON Schema
 
 JSON Schema is often tauted as the more universally accepted solution. The thing
 is, it's a solution to a different problem. JSON Schema is meant to be very
@@ -28,7 +30,7 @@ Schemas as well, consider using _Typedef_ and writing a `Typedef -> JSON Schema`
 generator. That way codegen consumers can still benefit from _Typedef_'s
 simplicity.
 
-### OpenAPI
+## OpenAPI
 
 `OpenAPI` serves a similar purpose, but is complex and meant to describe
 specifically APIs built on top of HTTP (often called "RESTful APIs", though
@@ -46,7 +48,7 @@ If you're not building a "web" API and aren't constrained by the HTTP
 vocabulary, you'll probably get more use from _Typedef_ and save some of your
 precious time to enjoy life.
 
-## Types supported by `serde`, but not by `jtd_derive`
+# Types supported by `serde`, but not by `jtd_derive`
 
 - unit structs like `struct Foo;`
 - tuple structs like `struct Foo(u32, u32)` or `struct Foo()`
@@ -90,6 +92,6 @@ universal and schemas that are suitable for code generation.
 Every bit of expressiveness you're missing here is a breath of relief for your
 consumers.
 
-## License
+# License
 
 Dual licensed under MIT and Apache 2.0 at your option, like most Rust project.
