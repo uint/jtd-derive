@@ -33,8 +33,8 @@ simplicity.
 specifically APIs built on top of HTTP (often called "RESTful APIs", though
 [that's usually quite silly](https://medium.com/@andrea.chiarelli/please-dont-call-them-restful-d2465527b5c)),
 with its paths and methods and all the doodads. In that way, it already has a
-way of describing your APIs endpoints, whereas if you want to use _Typedef_,
-you'll want to embed in some custom IDL of your design.
+way of describing your API's endpoints, whereas if you want to use _Typedef_,
+you'll want to embed it in some custom IDL of your design.
 
 If you're building one of those, `OpenAPI` might be worth a look. It seems
 complex, but maybe it will make sense for your use case.
