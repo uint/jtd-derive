@@ -1,3 +1,5 @@
+# jtd-derive &emsp; ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/uint/jtd-derive/rust.yml?branch=main)
+
 Generate [JSON Type Definition](https://jsontypedef.com/) schemas from Rust
 types.
 
