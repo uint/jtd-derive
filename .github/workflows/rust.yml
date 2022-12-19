@@ -19,9 +19,9 @@ jobs:
         with:
           shared-key: regular-${{ hashFiles('**/Cargo.lock') }}
       - name: Build
-        run: cargo build --verbose --workspace
+        run: cargo build --workspace
       - name: Run tests
-        run: cargo test --verbose --workspace
+        run: cargo test --workspace
   style:
     runs-on: ubuntu-latest
     steps:
@@ -39,20 +39,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@nightly
-      - name: Install cargo-hack
-        run: cargo install cargo-hack
       - name: Set up minimal dep versions
-        run: |
-          cargo hack --remove-dev-deps --workspace
-          cargo update -Z minimal-versions
+        run: cargo update -Z minimal-versions
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: minimal-${{ hashFiles('**/Cargo.lock') }}
       - name: Build
-        run: cargo +nightly build --verbose --workspace
+        run: cargo build --workspace
       - name: Run tests
-        run: cargo +nightly test --verbose --workspace
+        run: cargo test --workspace
   maximal_deps:
     runs-on: ubuntu-latest
     steps:
@@ -64,6 +60,6 @@ jobs:
         with:
           shared-key: maximal-${{ hashFiles('**/Cargo.lock') }}
       - name: Build
-        run: cargo build --verbose --workspace
+        run: cargo build --workspace
       - name: Run tests
-        run: cargo test --verbose --workspace
+        run: cargo test --workspace
