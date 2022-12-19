@@ -1,0 +1,65 @@
+name: Rust
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: regular-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build
+        run: cargo build --workspace
+      - name: Run tests
+        run: cargo test --workspace
+  style:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: regular-${{ hashFiles('**/Cargo.lock') }}
+      - name: cargo fmt
+        run: cargo fmt --all
+      - name: cargo clippy --workspace
+        run: cargo clippy --all
+  minimal_deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@nightly
+      - name: Set up minimal dep versions
+        run: cargo update -Z minimal-versions
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: minimal-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build
+        run: cargo build --workspace
+      - name: Run tests
+        run: cargo test --workspace
+  maximal_deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Update dependencies
+        run: cargo update
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: maximal-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build
+        run: cargo build --workspace
+      - name: Run tests
+        run: cargo test --workspace
