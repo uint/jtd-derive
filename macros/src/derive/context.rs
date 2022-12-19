@@ -5,7 +5,5 @@ use syn::DeriveInput;
 pub struct Context {}
 
 pub fn get_context(_input: &DeriveInput) -> Context {
-    let ctx = Context {};
-
-    ctx
+    Context {}
 }

@@ -31,9 +31,9 @@ jobs:
         with:
           shared-key: regular-${{ hashFiles('**/Cargo.lock') }}
       - name: cargo fmt
-        run: cargo fmt --workspace
+        run: cargo fmt --all
       - name: cargo clippy --workspace
-        run: cargo clippy
+        run: cargo clippy --all
   minimal_deps:
     runs-on: ubuntu-latest
     steps:
@@ -42,16 +42,16 @@ jobs:
         run: cargo install cargo-hack
       - name: Set up minimal dep versions
         run: |
-          cargo hack --remove-dev-deps --workspace
-          cargo update -Z minimal-versions
+          cargo +nightly hack --remove-dev-deps --workspace
+          cargo +nightly update -Z minimal-versions
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: minimal-${{ hashFiles('**/Cargo.lock') }}
       - name: Build
-        run: cargo build --verbose --workspace
+        run: cargo +nightly build --verbose --workspace
       - name: Run tests
-        run: cargo test --verbose --workspace
+        run: cargo +nightly test --verbose --workspace
   maximal_deps:
     runs-on: ubuntu-latest
     steps:

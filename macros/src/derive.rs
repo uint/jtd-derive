@@ -43,7 +43,7 @@ pub fn derive(input: DeriveInput) -> ItemImpl {
 
 pub fn gen_struct_schema(_ctx: &Context, ident: &Ident, s: DataStruct) -> TokenStream {
     match s.fields {
-        Fields::Named(_) if s.fields.len() == 0 => {
+        Fields::Named(_) if s.fields.is_empty() => {
             quote_spanned! {ident.span()=> compile_error!("jtd-derive does not support cstruct-like structs")}
         }
 
