@@ -59,14 +59,14 @@ precious time to enjoy life.
     simply if it has exactly one unnamed field, e.g. `struct Foo(u32)`
 - structs in the C struct style, but with no fields, e.g. `struct Foo {}`
 - enums with mixed variant "kinds", e.g.
-  ```
+  ```rust
   enum Foo {
       Bar,            // unit variant
       Baz { x: u32 }, // struct variant
   }
   ```
 - enums with tuple variants, e.g.
-  ```
+  ```rust
   enum Foo {
       Bar(u32),
       Baz(String),
