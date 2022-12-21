@@ -1,4 +1,4 @@
-error: jtd-derive does not support enums with no variants
+error: jtd-derive does not support empty enums
  --> tests/derive_errors/enum/empty.rs:2:6
   |
 2 | enum Empty {}

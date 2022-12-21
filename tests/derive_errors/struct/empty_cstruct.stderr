@@ -1,4 +1,4 @@
-error: jtd-derive does not support cstruct-like structs
+error: jtd-derive does not support empty cstruct-like structs
  --> tests/derive_errors/struct/empty_cstruct.rs:2:8
   |
 2 | struct EmptyCstruct {}

@@ -1,11 +1,11 @@
-error: jtd-derive does not support tuple variants
+error: Typedef can't support tuple variants
  --> tests/derive_errors/enum/tuple_variants.rs:3:5
   |
 3 |     Foo(u32),
-  |     ^^^
+  |     ^^^^^^^^
 
-error: jtd-derive does not support tuple variants
+error: Typedef can't support tuple variants
   --> tests/derive_errors/enum/tuple_variants.rs:10:5
    |
 10 |     Bar(u32),
-   |     ^^^
+   |     ^^^^^^^^

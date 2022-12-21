@@ -1,0 +1,5 @@
+error: jtd-derive requires an enum with struct variants to have a tag
+ --> tests/derive_errors/enum/struct_variants_no_attr.rs:2:6
+  |
+2 | enum Foo {
+  |      ^^^

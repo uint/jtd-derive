@@ -1,15 +1,17 @@
 mod context;
 
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::TokenStream;
 use quote::quote_spanned;
 use syn::{
-    parse_quote, DataEnum, DataStruct, DeriveInput, Fields, GenericParam, Generics, Ident, ItemImpl,
+    parse_quote, DataEnum, DataStruct, DeriveInput, Fields, FieldsNamed, GenericParam, Generics,
+    Ident, ItemImpl,
 };
 
-use self::context::Context;
+use self::context::Container;
 
-pub fn derive(input: DeriveInput) -> ItemImpl {
-    let ctx = context::get_context(&input);
+pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
+    let ctx = context::Container::from_input(&input)?;
+
     let ident = input.ident;
 
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
@@ -23,14 +25,14 @@ pub fn derive(input: DeriveInput) -> ItemImpl {
     }
 
     let res = match input.data {
-        syn::Data::Struct(s) => gen_struct_schema(&ctx, &ident, s),
-        syn::Data::Enum(e) => gen_enum_schema(&ctx, &ident, e),
+        syn::Data::Struct(s) => gen_struct_schema(&ctx, &ident, s)?,
+        syn::Data::Enum(e) => gen_enum_schema(&ctx, &ident, e)?,
         syn::Data::Union(_) => {
             quote_spanned! {ident.span()=> compile_error!("jtd-derive does not support unions")}
         }
     };
 
-    parse_quote! {
+    Ok(parse_quote! {
         impl #impl_generics ::jtd_derive::JsonTypedef for #ident #ty_generics #where_clause {
             fn schema() -> ::jtd_derive::schema::Schema {
                 use ::jtd_derive::JsonTypedef;
@@ -38,86 +40,177 @@ pub fn derive(input: DeriveInput) -> ItemImpl {
                 #res
             }
         }
-    }
+    })
 }
 
-pub fn gen_struct_schema(_ctx: &Context, ident: &Ident, s: DataStruct) -> TokenStream {
+fn gen_struct_schema(
+    _ctx: &Container,
+    ident: &Ident,
+    s: DataStruct,
+) -> Result<TokenStream, syn::Error> {
     match s.fields {
-        Fields::Named(_) if s.fields.is_empty() => {
-            quote_spanned! {ident.span()=> compile_error!("jtd-derive does not support cstruct-like structs")}
-        }
+        Fields::Named(_) if s.fields.is_empty() => Err(syn::Error::new_spanned(
+            ident,
+            "jtd-derive does not support empty cstruct-like structs",
+        )),
 
-        Fields::Named(fields) => {
-            let (idents, types): (Vec<_>, Vec<_>) =
-                fields.named.iter().map(|f| (&f.ident, &f.ty)).unzip();
-
-            parse_quote! {
-                Schema {
-                    ty: SchemaType::Properties {
-                        properties: [#((stringify!(#idents), <#types as JsonTypedef>::schema())),*].into(),
-                        optional_properties: [].into(),
-                        additional_properties: true,
-                    },
-                    ..::jtd_derive::schema::Schema::empty()
-                }
-            }
-        }
+        Fields::Named(fields) => Ok(gen_named_fields(&fields, true)),
         Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
             let ty = &fields.unnamed[0].ty;
 
-            parse_quote! {
+            Ok(parse_quote! {
                 <#ty as JsonTypedef>::schema()
-            }
+            })
         }
-        Fields::Unnamed(_) => {
-            quote_spanned! {ident.span()=> compile_error!("jtd-derive only supports tuple structs if they have exactly one field")}
+        Fields::Unnamed(_) => Err(syn::Error::new_spanned(
+            ident,
+            "jtd-derive only supports tuple structs if they have exactly one field",
+        )),
+        _ => Err(syn::Error::new_spanned(
+            ident,
+            "jtd-derive does not support unit structs",
+        )),
+    }
+}
+
+fn gen_enum_schema(
+    ctx: &Container,
+    ident: &Ident,
+    enu: DataEnum,
+) -> Result<TokenStream, syn::Error> {
+    match enum_kind(ident, &enu)? {
+        EnumKind::UnitVariants => {
+            let idents = enu.variants.iter().map(|v| &v.ident);
+
+            // TODO: support `tag = "..."`
+
+            Ok(parse_quote! {
+                Schema {
+                    ty: SchemaType::Enum {
+                        r#enum: [#(stringify!(#idents)),*].into(),
+                    },
+                    ..::jtd_derive::schema::Schema::empty()
+                }
+            })
         }
-        _ => {
-            quote_spanned! {ident.span()=> compile_error!("jtd-derive does not support unit structs")}
+        EnumKind::StructVariants => {
+            let tag = match &ctx.tag_type {
+                context::TagType::External => {
+                    return Err(syn::Error::new_spanned(
+                        ident,
+                        "jtd-derive requires an enum with struct variants to have a tag",
+                    ));
+                }
+                context::TagType::Internal(t) => t,
+            };
+
+            let (idents, variants): (Vec<_>, Vec<_>) = enu
+                .variants
+                .iter()
+                .map(|v| {
+                    (
+                        &v.ident,
+                        gen_named_fields(unwrap_fields_named(&v.fields), false),
+                    )
+                })
+                .unzip();
+
+            Ok(parse_quote! {
+                Schema {
+                    ty: SchemaType::Discriminator {
+                        discriminator: #tag,
+                        mapping: [#((stringify!(#idents), #variants)),*].into(),
+                    },
+                    ..::jtd_derive::schema::Schema::empty()
+                }
+            })
         }
     }
 }
 
-pub fn gen_enum_schema(_ctx: &Context, ident: &Ident, e: DataEnum) -> TokenStream {
-    match enum_kind(&e) {
-        EnumKind::UnitLikeVariants => todo!(),
-        EnumKind::CstructLikeVariants => todo!(),
-        EnumKind::SomeTupleVariants(span) => {
-            quote_spanned! {span=> compile_error!("jtd-derive does not support tuple variants")}
-        }
-        EnumKind::Mixed => {
-            quote_spanned! {ident.span()=> compile_error!("jtd-derive requires all enum variants to be of the same kind (unit-like or cstruct-like)")}
-        }
-        EnumKind::Empty => {
-            quote_spanned! {ident.span()=> compile_error!("jtd-derive does not support enums with no variants")}
+fn gen_named_fields(fields: &FieldsNamed, additional: bool) -> TokenStream {
+    let (idents, types): (Vec<_>, Vec<_>) = fields.named.iter().map(|f| (&f.ident, &f.ty)).unzip();
+
+    parse_quote! {
+        Schema {
+            ty: SchemaType::Properties {
+                properties: [#((stringify!(#idents), <#types as JsonTypedef>::schema())),*].into(),
+                optional_properties: [].into(),
+                additional_properties: #additional,
+            },
+            ..::jtd_derive::schema::Schema::empty()
         }
     }
 }
 
-fn enum_kind(e: &DataEnum) -> EnumKind {
-    // (named, unit)
-    let mut counts = (0, 0);
+fn unwrap_fields_named(fields: &Fields) -> &FieldsNamed {
+    if let Fields::Named(named) = fields {
+        named
+    } else {
+        // this branch should never be reached, so it being a panic and not
+        // a quoted compile_error is OK
+        panic!("expected named fields")
+    }
+}
+
+fn enum_kind(ident: &Ident, e: &DataEnum) -> Result<EnumKind, syn::Error> {
+    let (mut named, mut unit) = (None, None);
 
     for variant in &e.variants {
         match variant.fields {
-            Fields::Named(_) => counts.0 += 1,
-            Fields::Unit => counts.1 += 1,
-            Fields::Unnamed(_) => return EnumKind::SomeTupleVariants(variant.ident.span()),
+            Fields::Named(_) => {
+                named = Some(variant);
+                if unit.is_some() {
+                    break;
+                }
+            }
+            Fields::Unit => {
+                unit = Some(variant);
+                if named.is_some() {
+                    break;
+                }
+            }
+            Fields::Unnamed(_) => {
+                return Err(syn::Error::new_spanned(
+                    variant,
+                    "Typedef can't support tuple variants",
+                ))
+            }
         }
     }
 
-    match counts {
-        (0, 0) => EnumKind::Empty,
-        (0, _) => EnumKind::UnitLikeVariants,
-        (_, 0) => EnumKind::CstructLikeVariants,
-        _ => EnumKind::Mixed,
+    match (named, unit) {
+        (None, None) => Err(syn::Error::new_spanned(
+            ident,
+            "jtd-derive does not support empty enums",
+        )),
+        (None, Some(_)) => Ok(EnumKind::UnitVariants),
+        (Some(_), None) => Ok(EnumKind::StructVariants),
+        (Some(named), Some(unit)) => {
+            let mut err = syn::Error::new_spanned(
+                ident,
+                "Typedef can't support enums with a mix of unit and struct variants",
+            );
+
+            // TODO: if the output looks like independent errors, we probably want
+            // to scratch the two errors below. probably
+            err.combine(syn::Error::new_spanned(
+                unit,
+                format!("here's a unit variant of `{}`", ident),
+            ));
+            err.combine(syn::Error::new_spanned(
+                named,
+                format!("here's a struct variant of `{}`", ident),
+            ));
+
+            Err(err)
+        }
     }
 }
 
 enum EnumKind {
-    UnitLikeVariants,
-    CstructLikeVariants,
-    SomeTupleVariants(Span),
-    Mixed,
-    Empty,
+    // the enum only has unit variants
+    UnitVariants,
+    // the enum only has struct variants
+    StructVariants,
 }

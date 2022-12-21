@@ -1,5 +1,17 @@
-error: jtd-derive requires all enum variants to be of the same kind (unit-like or cstruct-like)
+error: Typedef can't support enums with a mix of unit and struct variants
  --> tests/derive_errors/enum/mixed.rs:2:6
   |
 2 | enum Mixed {
   |      ^^^^^
+
+error: here's a unit variant of `Mixed`
+ --> tests/derive_errors/enum/mixed.rs:3:5
+  |
+3 |     Foo,
+  |     ^^^
+
+error: here's a struct variant of `Mixed`
+ --> tests/derive_errors/enum/mixed.rs:4:5
+  |
+4 |     Bar { x: u32 },
+  |     ^^^^^^^^^^^^^^

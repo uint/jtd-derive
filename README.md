@@ -47,8 +47,7 @@ If you're building a "web" api, `OpenAPI` might be worth a look. It seems
 complex, but maybe it will make sense for your use case.
 
 If you're not building a "web" API and aren't constrained by the HTTP
-vocabulary, you'll probably get more use from _Typedef_ and save some of your
-precious time to enjoy life.
+vocabulary, you'll probably get more value out of _Typedef_.
 
 # Types supported by `serde`, but not by `jtd_derive`
 

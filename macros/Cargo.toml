@@ -14,7 +14,10 @@ keywords = ["schema", "codegen", "json"]
 proc-macro = true
 
 [dependencies]
+derivative = "2.2.0"
+itertools = "0.10.5"
 proc-macro-error = "1"
 proc-macro2 = "1"
 quote = "1"
+serde_derive_internals = "0.26.0"
 syn = { version = "1.0.6", features = ["full", "printing", "extra-traits"] }
