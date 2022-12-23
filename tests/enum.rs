@@ -18,6 +18,27 @@ fn enum_unit_variants() {
 }
 
 #[derive(JsonTypedef)]
+#[typedef(tag = "kind")]
+#[allow(dead_code)]
+enum UnitVariantsTagged {
+    Bar,
+    Baz,
+}
+
+#[test]
+fn enum_unit_variants_tagged() {
+    assert_eq!(
+        serde_json::to_value(UnitVariantsTagged::schema()).unwrap(),
+        serde_json::json! {{
+            "properties": {
+                "kind": {"enum": ["Bar", "Baz"]}
+            },
+            "additionalProperties": true,
+        }}
+    );
+}
+
+#[derive(JsonTypedef)]
 #[typedef(tag = "type")]
 #[allow(dead_code)]
 enum StructVariants {
@@ -35,12 +56,14 @@ fn enum_struct_variants() {
                 "Bar": {
                     "properties": {
                         "x": {"type": "uint32"}
-                    }
+                    },
+                    "additionalProperties": true
                 },
                 "Baz": {
                     "properties": {
                         "y": {"type": "string"}
-                    }
+                    },
+                    "additionalProperties": true
                 }
             }
         }}

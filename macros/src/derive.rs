@@ -82,16 +82,30 @@ fn gen_enum_schema(
         EnumKind::UnitVariants => {
             let idents = enu.variants.iter().map(|v| &v.ident);
 
-            // TODO: support `tag = "..."`
-
-            Ok(parse_quote! {
+            let enum_schema = parse_quote! {
                 Schema {
                     ty: SchemaType::Enum {
                         r#enum: [#(stringify!(#idents)),*].into(),
                     },
                     ..::jtd_derive::schema::Schema::empty()
                 }
-            })
+            };
+
+            match &ctx.tag_type {
+                context::TagType::External => Ok(enum_schema),
+                context::TagType::Internal(tag) => Ok(parse_quote! {
+                    Schema {
+                        ty: SchemaType::Properties {
+                            properties: [
+                                (#tag, #enum_schema)
+                            ].into(),
+                            additional_properties: true,
+                            optional_properties: [].into(),
+                        },
+                        ..::jtd_derive::schema::Schema::empty()
+                    }
+                }),
+            }
         }
         EnumKind::StructVariants => {
             let tag = match &ctx.tag_type {
@@ -110,7 +124,7 @@ fn gen_enum_schema(
                 .map(|v| {
                     (
                         &v.ident,
-                        gen_named_fields(unwrap_fields_named(&v.fields), false),
+                        gen_named_fields(unwrap_fields_named(&v.fields), true),
                     )
                 })
                 .unzip();
