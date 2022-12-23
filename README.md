@@ -5,7 +5,14 @@ types.
 
 # Status
 
-WIP - not very useful yet
+WIP
+
+- [x] Working trait and derive for most types
+- [x] Attribute parsing
+- [x] Integration tests
+- [ ] Support as many `serde` attributes as possible
+- [ ] Figure out an API
+- [ ] Publish to crates.io
 
 # Why?
 
