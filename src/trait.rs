@@ -41,7 +41,8 @@ macro_rules! impl_primitives {
                     Names {
                         short: TypeSchema::$out.name(),
                         long: TypeSchema::$out.name(),
-                        generics: vec![],
+                        type_params: vec![],
+                        const_params: vec![],
                     }
                 }
             }
@@ -94,7 +95,8 @@ macro_rules! impl_wrappers {
                     Names {
                         short: stringify!($in),
                         long: stringify!($($path_parts)::+::$in),
-                        generics: vec![],
+                        type_params: vec![],
+                        const_params: vec![],
                     }
                 }
             }
@@ -171,7 +173,8 @@ macro_rules! impl_array_like {
                     Names {
                         short: "array",
                         long: "array",
-                        generics: vec![T::names()],
+                        type_params: vec![T::names()],
+                        const_params: vec![],
                     }
                 }
             }
@@ -207,7 +210,8 @@ impl<T: JsonTypedef, const N: usize> JsonTypedef for [T; N] {
         Names {
             short: "array",
             long: "array",
-            generics: vec![T::names()],
+            type_params: vec![T::names()],
+            const_params: vec![],
         }
     }
 }
@@ -233,7 +237,8 @@ macro_rules! impl_map_like {
                     Names {
                         short: "map",
                         long: "map",
-                        generics: vec![V::names()],
+                        type_params: vec![V::names()],
+                        const_params: vec![],
                     }
                 }
             }
@@ -327,7 +332,8 @@ impl<'a> JsonTypedef for Arguments<'a> {
         Names {
             short: "string",
             long: "string",
-            generics: vec![],
+            type_params: vec![],
+            const_params: vec![],
         }
     }
 }
@@ -355,7 +361,8 @@ macro_rules! impl_range {
                     Names {
                         short: stringify!($in),
                         long: concat!("std::ops::", stringify!($in)),
-                        generics: vec![T::names()],
+                        type_params: vec![T::names()],
+                        const_params: vec![],
                     }
                 }
             }

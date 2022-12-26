@@ -24,7 +24,8 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
         }
     }
 
-    let type_params = input.generics.type_params();
+    let type_params = input.generics.type_params().map(|p| &p.ident);
+    let const_params = input.generics.const_params().map(|p| &p.ident);
 
     let res = match input.data {
         syn::Data::Struct(s) => gen_struct_schema(&ctx, &ident, s)?,
@@ -50,7 +51,8 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
                 ::jtd_derive::schema::Names {
                     short: stringify!(#ident),
                     long: concat!(module_path!(), "::", stringify!(#ident)),
-                    generics: [#(#type_params::names()),*].into(),
+                    type_params: [#(#type_params::names()),*].into(),
+                    const_params: [#(#const_params.to_string()),*].into(),
                 }
             }
         }

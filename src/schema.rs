@@ -42,7 +42,8 @@ impl Schema {
 pub struct Names {
     pub short: &'static str,
     pub long: &'static str,
-    pub generics: Vec<Names>,
+    pub type_params: Vec<Names>,
+    pub const_params: Vec<String>,
 }
 
 fn is_false(v: &bool) -> bool {
