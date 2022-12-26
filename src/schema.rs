@@ -38,6 +38,13 @@ impl Schema {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Names {
+    pub short: &'static str,
+    pub long: &'static str,
+    pub generics: Vec<Names>,
+}
+
 fn is_false(v: &bool) -> bool {
     !*v
 }
@@ -97,6 +104,24 @@ pub enum TypeSchema {
     Uint32,
 }
 
+impl TypeSchema {
+    pub const fn name(&self) -> &'static str {
+        match self {
+            TypeSchema::Boolean => "boolean",
+            TypeSchema::String => "string",
+            TypeSchema::Timestamp => "timestamp",
+            TypeSchema::Float32 => "float32",
+            TypeSchema::Float64 => "float64",
+            TypeSchema::Int8 => "int8",
+            TypeSchema::Uint8 => "uint8",
+            TypeSchema::Int16 => "int16",
+            TypeSchema::Uint16 => "uint16",
+            TypeSchema::Int32 => "int32",
+            TypeSchema::Uint32 => "uint32",
+        }
+    }
+}
+
 /// Schema metadata.
 #[derive(Default, Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct Metadata(HashMap<&'static str, serde_json::Value>);
@@ -152,11 +177,11 @@ mod tests {
     fn nullable() {
         let repr = RootSchema {
             schema: Schema {
-                metadata: Metadata::default(),
                 ty: SchemaType::Type {
                     r#type: TypeSchema::Int16,
                 },
                 nullable: true,
+                ..Schema::empty()
             },
             definitions: HashMap::new(),
         };
@@ -179,6 +204,7 @@ mod tests {
                     r#type: TypeSchema::Int16,
                 },
                 nullable: false,
+                ..Schema::empty()
             },
             definitions: HashMap::new(),
         };
@@ -213,11 +239,11 @@ mod tests {
             schema: Schema {
                 ty: SchemaType::Elements {
                     elements: Box::new(Schema {
-                        metadata: Metadata::default(),
                         ty: SchemaType::Enum {
                             r#enum: vec!["FOO", "BAR", "BAZ"],
                         },
                         nullable: true,
+                        ..Schema::empty()
                     }),
                 },
                 ..Schema::empty()

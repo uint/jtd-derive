@@ -2,20 +2,22 @@ use std::borrow::Cow;
 use std::cell::{Cell, RefCell};
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, BinaryHeap, HashMap, HashSet, LinkedList, VecDeque};
-use std::ffi::{CStr, CString, OsStr, OsString};
 use std::fmt::Arguments;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
-use std::num::{self, Wrapping};
 use std::ops::{Range, RangeInclusive};
-use std::path::{Path, PathBuf};
 use std::sync::{atomic, Mutex, RwLock};
 
-use crate::schema::{Schema, SchemaType, TypeSchema};
+use crate::schema::{Names, Schema, SchemaType, TypeSchema};
 
 pub use jtd_derive_macros::JsonTypedef;
 
 pub trait JsonTypedef {
     fn schema() -> Schema;
+
+    fn referenceable() -> bool {
+        true
+    }
+
+    fn names() -> Names;
 }
 
 macro_rules! impl_primitives {
@@ -30,12 +32,25 @@ macro_rules! impl_primitives {
                         ..Schema::empty()
                     }
                 }
+
+                fn referenceable() -> bool {
+                    false
+                }
+
+                fn names() -> Names {
+                    Names {
+                        short: TypeSchema::$out.name(),
+                        long: TypeSchema::$out.name(),
+                        generics: vec![],
+                    }
+                }
             }
         )*
 	};
 }
 
 impl_primitives! {
+    // actual primitives
     bool => Boolean,
     u8 => Uint8,
     u16 => Uint16,
@@ -52,36 +67,86 @@ impl_primitives! {
     atomic::AtomicI8 => Int8,
     atomic::AtomicI16 => Int16,
     atomic::AtomicI32 => Int32,
-    num::NonZeroU8 => Uint8,
-    num::NonZeroU16 => Uint16,
-    num::NonZeroU32 => Uint32,
-    num::NonZeroI8 => Int8,
-    num::NonZeroI16 => Int16,
-    num::NonZeroI32 => Int32,
     char => String,
     String => String,
-    str => String,
-    CString => String,
-    CStr => String,
-    OsString => String,
-    OsStr => String,
-    PathBuf => String,
-    Path => String,
-    IpAddr => String,
-    Ipv4Addr => String,
-    Ipv6Addr => String,
-    SocketAddr => String,
-    SocketAddrV4 => String,
-    SocketAddrV6 => String
+    str => String
+}
+
+// Distinct types due to additional constraints
+macro_rules! impl_wrappers {
+	($($($path_parts:ident)::+ => $in:ident => $out:ident),*) => {
+		$(
+            impl JsonTypedef for $($path_parts)::+::$in {
+                fn schema() -> Schema {
+                    Schema {
+                        ty: SchemaType::Type {
+                            r#type: TypeSchema::$out,
+                        },
+                        ..Schema::empty()
+                    }
+                }
+
+                fn referenceable() -> bool {
+                    true
+                }
+
+                fn names() -> Names {
+                    Names {
+                        short: stringify!($in),
+                        long: stringify!($($path_parts)::+::$in),
+                        generics: vec![],
+                    }
+                }
+            }
+        )*
+	};
+}
+
+impl_wrappers! {
+    std::num => NonZeroU8 => Uint8,
+    std::num => NonZeroU16 => Uint16,
+    std::num => NonZeroU32 => Uint32,
+    std::num => NonZeroI8 => Int8,
+    std::num => NonZeroI16 => Int16,
+    std::num => NonZeroI32 => Int32,
+
+    std::net => IpAddr => String,
+    std::net => Ipv4Addr => String,
+    std::net => Ipv6Addr => String,
+    std::net => SocketAddr => String,
+    std::net => SocketAddrV4 => String,
+    std::net => SocketAddrV6 => String,
+
+    std::path => Path => String
+}
+
+impl JsonTypedef for std::path::PathBuf {
+    fn schema() -> Schema {
+        std::path::Path::schema()
+    }
+
+    fn referenceable() -> bool {
+        std::path::Path::referenceable()
+    }
+
+    fn names() -> Names {
+        std::path::Path::names()
+    }
 }
 
 impl<T: JsonTypedef> JsonTypedef for Option<T> {
     fn schema() -> Schema {
-        // an argument could be made this should error on `Option<Option<T>>`, but
-        // we're trying to follow serde's footsteps
         let mut schema = T::schema();
         schema.nullable = true;
         schema
+    }
+
+    fn referenceable() -> bool {
+        false
+    }
+
+    fn names() -> Names {
+        T::names()
     }
 }
 
@@ -95,6 +160,18 @@ macro_rules! impl_array_like {
                             elements: Box::new(T::schema()),
                         },
                         ..Schema::empty()
+                    }
+                }
+
+                fn referenceable() -> bool {
+                    false
+                }
+
+                fn names() -> Names {
+                    Names {
+                        short: "array",
+                        long: "array",
+                        generics: vec![T::names()],
                     }
                 }
             }
@@ -121,6 +198,18 @@ impl<T: JsonTypedef, const N: usize> JsonTypedef for [T; N] {
             ..Schema::empty()
         }
     }
+
+    fn referenceable() -> bool {
+        false
+    }
+
+    fn names() -> Names {
+        Names {
+            short: "array",
+            long: "array",
+            generics: vec![T::names()],
+        }
+    }
 }
 
 macro_rules! impl_map_like {
@@ -135,15 +224,24 @@ macro_rules! impl_map_like {
                         ..Schema::empty()
                     }
                 }
+
+                fn referenceable() -> bool {
+                    false
+                }
+
+                fn names() -> Names {
+                    Names {
+                        short: "map",
+                        long: "map",
+                        generics: vec![V::names()],
+                    }
+                }
             }
         )*
 	};
 }
 
-impl_map_like!(
-    BTreeMap<K, V>,
-    HashMap<K, V>
-);
+impl_map_like!(BTreeMap<K, V>, HashMap<K, V>);
 
 macro_rules! impl_transparent {
 	($($in:ty),*) => {
@@ -152,13 +250,21 @@ macro_rules! impl_transparent {
                 fn schema() -> Schema {
                     T::schema()
                 }
+
+                fn referenceable() -> bool {
+                    T::referenceable()
+                }
+
+                fn names() -> Names {
+                    T::names()
+                }
             }
         )*
 	};
 }
 
 impl_transparent!(
-    Wrapping<T>,
+    std::num::Wrapping<T>,
     Cell<T>,
     RefCell<T>,
     Box<T>,
@@ -174,6 +280,14 @@ macro_rules! impl_transparent_lifetime {
                 fn schema() -> Schema {
                     T::schema()
                 }
+
+                fn referenceable() -> bool {
+                    T::referenceable()
+                }
+
+                fn names() -> Names {
+                    T::names()
+                }
             }
         )*
 	};
@@ -185,6 +299,14 @@ impl<'a, T: JsonTypedef + Clone> JsonTypedef for Cow<'a, T> {
     fn schema() -> Schema {
         T::schema()
     }
+
+    fn referenceable() -> bool {
+        T::referenceable()
+    }
+
+    fn names() -> Names {
+        T::names()
+    }
 }
 
 impl<'a> JsonTypedef for Arguments<'a> {
@@ -194,6 +316,18 @@ impl<'a> JsonTypedef for Arguments<'a> {
                 r#type: TypeSchema::String,
             },
             ..Schema::empty()
+        }
+    }
+
+    fn referenceable() -> bool {
+        false
+    }
+
+    fn names() -> Names {
+        Names {
+            short: "string",
+            long: "string",
+            generics: vec![],
         }
     }
 }
@@ -210,6 +344,18 @@ macro_rules! impl_range {
                             additional_properties: false,
                         },
                         ..Schema::empty()
+                    }
+                }
+
+                fn referenceable() -> bool {
+                    true
+                }
+
+                fn names() -> Names {
+                    Names {
+                        short: stringify!($in),
+                        long: concat!("std::ops::", stringify!($in)),
+                        generics: vec![T::names()],
                     }
                 }
             }

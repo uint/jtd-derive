@@ -24,6 +24,8 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
         }
     }
 
+    let type_params = input.generics.type_params();
+
     let res = match input.data {
         syn::Data::Struct(s) => gen_struct_schema(&ctx, &ident, s)?,
         syn::Data::Enum(e) => gen_enum_schema(&ctx, &ident, e)?,
@@ -38,6 +40,18 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
                 use ::jtd_derive::JsonTypedef;
                 use ::jtd_derive::schema::{Schema, SchemaType};
                 #res
+            }
+
+            fn referenceable() -> bool {
+                true
+            }
+
+            fn names() -> ::jtd_derive::schema::Names {
+                ::jtd_derive::schema::Names {
+                    short: stringify!(#ident),
+                    long: concat!(module_path!(), "::", stringify!(#ident)),
+                    generics: [#(#type_params::names()),*].into(),
+                }
             }
         }
     })

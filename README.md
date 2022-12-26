@@ -5,7 +5,11 @@ types.
 
 # Status
 
-WIP
+Work in progress.
+
+The API is unstable. Expect breaking changes between minor version bumps.
+
+Essential work:
 
 - [x] Working trait and derive for most types
 - [x] Attribute parsing
@@ -91,6 +95,10 @@ vocabulary, you'll probably get more value out of _Typedef_.
   specify a null literal in the schema.
 - `Result` - `Ok` and `Err` variants usually have different forms, which can't
   be expressed in Typedef.
+- `OsStr`, `OsString`, `Path`, `PathBuf` - I don't fully understand the
+  subtleties around these types. I'm not sure if it's smart to encourage people
+  to use these types at API boundaries other than the Rust FFI. If you'd like to
+  discuss, feel free to open an issue describing your use case and thoughts.
 
 This may all seem quite restrictive, but keep in mind the point of _Typedef_
 isn't to be vastly expressive and capable of describing anything that can be
