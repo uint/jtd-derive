@@ -1,4 +1,4 @@
-use jtd_derive::JsonTypedef;
+use jtd_derive::{gen::Generator, JsonTypedef};
 
 #[derive(JsonTypedef)]
 #[allow(dead_code)]
@@ -10,7 +10,7 @@ enum UnitVariants {
 #[test]
 fn enum_unit_variants() {
     assert_eq!(
-        serde_json::to_value(UnitVariants::schema()).unwrap(),
+        serde_json::to_value(UnitVariants::schema(&mut Generator::default())).unwrap(),
         serde_json::json! {{
             "enum": ["Bar", "Baz"]
         }}
@@ -28,7 +28,7 @@ enum UnitVariantsTagged {
 #[test]
 fn enum_unit_variants_tagged() {
     assert_eq!(
-        serde_json::to_value(UnitVariantsTagged::schema()).unwrap(),
+        serde_json::to_value(UnitVariantsTagged::schema(&mut Generator::default())).unwrap(),
         serde_json::json! {{
             "properties": {
                 "kind": {"enum": ["Bar", "Baz"]}
@@ -49,7 +49,7 @@ enum StructVariants {
 #[test]
 fn enum_struct_variants() {
     assert_eq!(
-        serde_json::to_value(StructVariants::schema()).unwrap(),
+        serde_json::to_value(StructVariants::schema(&mut Generator::default())).unwrap(),
         serde_json::json! {{
             "discriminator": "type",
             "mapping": {

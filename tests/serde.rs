@@ -1,4 +1,4 @@
-use jtd_derive::JsonTypedef;
+use jtd_derive::{gen::Generator, JsonTypedef};
 use serde::Deserialize;
 
 #[derive(JsonTypedef, Deserialize)]
@@ -12,7 +12,7 @@ enum StructVariants {
 #[test]
 fn enum_respects_serde_tag_attr() {
     assert_eq!(
-        serde_json::to_value(StructVariants::schema()).unwrap(),
+        serde_json::to_value(StructVariants::schema(&mut Generator::default())).unwrap(),
         serde_json::json! {{
             "discriminator": "type",
             "mapping": {

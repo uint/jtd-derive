@@ -37,7 +37,7 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
 
     Ok(parse_quote! {
         impl #impl_generics ::jtd_derive::JsonTypedef for #ident #ty_generics #where_clause {
-            fn schema() -> ::jtd_derive::schema::Schema {
+            fn schema(gen: &mut ::jtd_derive::gen::Generator) -> ::jtd_derive::schema::Schema {
                 use ::jtd_derive::JsonTypedef;
                 use ::jtd_derive::schema::{Schema, SchemaType};
                 #res
@@ -75,7 +75,7 @@ fn gen_struct_schema(
             let ty = &fields.unnamed[0].ty;
 
             Ok(parse_quote! {
-                <#ty as JsonTypedef>::schema()
+                gen.sub_schema::<#ty>()
             })
         }
         Fields::Unnamed(_) => Err(syn::Error::new_spanned(
@@ -164,7 +164,7 @@ fn gen_named_fields(fields: &FieldsNamed, additional: bool) -> TokenStream {
     parse_quote! {
         Schema {
             ty: SchemaType::Properties {
-                properties: [#((stringify!(#idents), <#types as JsonTypedef>::schema())),*].into(),
+                properties: [#((stringify!(#idents), gen.sub_schema::<#types>())),*].into(),
                 optional_properties: [].into(),
                 additional_properties: #additional,
             },

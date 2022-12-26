@@ -1,4 +1,4 @@
-use jtd_derive::JsonTypedef;
+use jtd_derive::{gen::Generator, JsonTypedef};
 
 #[derive(JsonTypedef)]
 #[allow(dead_code)]
@@ -10,7 +10,7 @@ struct Cstruct {
 #[test]
 fn cstruct() {
     assert_eq!(
-        serde_json::to_value(Cstruct::schema()).unwrap(),
+        serde_json::to_value(Cstruct::schema(&mut Generator::default())).unwrap(),
         serde_json::json! {{
             "properties": {
                 "bar": { "type": "uint32" },
@@ -31,7 +31,10 @@ struct CstructWithGenerics<'a, T, const N: usize> {
 #[test]
 fn cstruct_with_generics() {
     assert_eq!(
-        serde_json::to_value(CstructWithGenerics::<'_, u32, 2>::schema()).unwrap(),
+        serde_json::to_value(CstructWithGenerics::<'_, u32, 2>::schema(
+            &mut Generator::default()
+        ))
+        .unwrap(),
         serde_json::json! {{
             "properties": {
                 "bar": { "type": "string" },
@@ -49,7 +52,7 @@ struct Newtype(u32);
 #[test]
 fn newtype_like() {
     assert_eq!(
-        serde_json::to_value(Newtype::schema()).unwrap(),
+        serde_json::to_value(Newtype::schema(&mut Generator::default())).unwrap(),
         serde_json::json! {{
             "type": "uint32",
         }}

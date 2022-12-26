@@ -6,12 +6,13 @@ use std::fmt::Arguments;
 use std::ops::{Range, RangeInclusive};
 use std::sync::{atomic, Mutex, RwLock};
 
+use crate::gen::Generator;
 use crate::schema::{Names, Schema, SchemaType, TypeSchema};
 
 pub use jtd_derive_macros::JsonTypedef;
 
 pub trait JsonTypedef {
-    fn schema() -> Schema;
+    fn schema(generator: &mut Generator) -> Schema;
 
     fn referenceable() -> bool {
         true
@@ -24,7 +25,7 @@ macro_rules! impl_primitives {
 	($($in:ty => $out:ident),*) => {
 		$(
             impl JsonTypedef for $in {
-                fn schema() -> Schema {
+                fn schema(_: &mut Generator) -> Schema {
                     Schema {
                         ty: SchemaType::Type {
                             r#type: TypeSchema::$out,
@@ -78,7 +79,7 @@ macro_rules! impl_wrappers {
 	($($($path_parts:ident)::+ => $in:ident => $out:ident),*) => {
 		$(
             impl JsonTypedef for $($path_parts)::+::$in {
-                fn schema() -> Schema {
+                fn schema(_: &mut Generator) -> Schema {
                     Schema {
                         ty: SchemaType::Type {
                             r#type: TypeSchema::$out,
@@ -123,8 +124,8 @@ impl_wrappers! {
 }
 
 impl JsonTypedef for std::path::PathBuf {
-    fn schema() -> Schema {
-        std::path::Path::schema()
+    fn schema(gen: &mut Generator) -> Schema {
+        std::path::Path::schema(gen)
     }
 
     fn referenceable() -> bool {
@@ -137,8 +138,8 @@ impl JsonTypedef for std::path::PathBuf {
 }
 
 impl<T: JsonTypedef> JsonTypedef for Option<T> {
-    fn schema() -> Schema {
-        let mut schema = T::schema();
+    fn schema(gen: &mut Generator) -> Schema {
+        let mut schema = gen.sub_schema::<T>();
         schema.nullable = true;
         schema
     }
@@ -156,10 +157,10 @@ macro_rules! impl_array_like {
 	($($in:ty),*) => {
 		$(
             impl<T: JsonTypedef> JsonTypedef for $in {
-                fn schema() -> Schema {
+                fn schema(gen: &mut Generator) -> Schema {
                     Schema {
                         ty: SchemaType::Elements {
-                            elements: Box::new(T::schema()),
+                            elements: Box::new(gen.sub_schema::<T>()),
                         },
                         ..Schema::empty()
                     }
@@ -193,10 +194,10 @@ impl_array_like!(
 );
 
 impl<T: JsonTypedef, const N: usize> JsonTypedef for [T; N] {
-    fn schema() -> Schema {
+    fn schema(gen: &mut Generator) -> Schema {
         Schema {
             ty: SchemaType::Elements {
-                elements: Box::new(T::schema()),
+                elements: Box::new(gen.sub_schema::<T>()),
             },
             ..Schema::empty()
         }
@@ -220,10 +221,10 @@ macro_rules! impl_map_like {
 	($($in:ty),*) => {
 		$(
             impl<K: ToString, V: JsonTypedef> JsonTypedef for $in {
-                fn schema() -> Schema {
+                fn schema(gen: &mut Generator) -> Schema {
                     Schema {
                         ty: SchemaType::Values {
-                            values: Box::new(V::schema()),
+                            values: Box::new(gen.sub_schema::<V>()),
                         },
                         ..Schema::empty()
                     }
@@ -252,8 +253,8 @@ macro_rules! impl_transparent {
 	($($in:ty),*) => {
 		$(
             impl<T: JsonTypedef> JsonTypedef for $in {
-                fn schema() -> Schema {
-                    T::schema()
+                fn schema(gen: &mut Generator) -> Schema {
+                    T::schema(gen)
                 }
 
                 fn referenceable() -> bool {
@@ -282,8 +283,8 @@ macro_rules! impl_transparent_lifetime {
 	($($in:ty),*) => {
 		$(
             impl<'a, T: JsonTypedef + ?Sized> JsonTypedef for $in {
-                fn schema() -> Schema {
-                    T::schema()
+                fn schema(gen: &mut Generator) -> Schema {
+                    T::schema(gen)
                 }
 
                 fn referenceable() -> bool {
@@ -301,8 +302,8 @@ macro_rules! impl_transparent_lifetime {
 impl_transparent_lifetime!(&'a T, &'a mut T);
 
 impl<'a, T: JsonTypedef + Clone> JsonTypedef for Cow<'a, T> {
-    fn schema() -> Schema {
-        T::schema()
+    fn schema(gen: &mut Generator) -> Schema {
+        T::schema(gen)
     }
 
     fn referenceable() -> bool {
@@ -315,7 +316,7 @@ impl<'a, T: JsonTypedef + Clone> JsonTypedef for Cow<'a, T> {
 }
 
 impl<'a> JsonTypedef for Arguments<'a> {
-    fn schema() -> Schema {
+    fn schema(_: &mut Generator) -> Schema {
         Schema {
             ty: SchemaType::Type {
                 r#type: TypeSchema::String,
@@ -342,10 +343,10 @@ macro_rules! impl_range {
 	($($in:ty),*) => {
 		$(
             impl<T: JsonTypedef> JsonTypedef for $in {
-                fn schema() -> Schema {
+                fn schema(gen: &mut Generator) -> Schema {
                     Schema {
                         ty: SchemaType::Properties {
-                            properties: [("start", T::schema()), ("end", T::schema())].into(),
+                            properties: [("start", gen.sub_schema::<T>()), ("end", gen.sub_schema::<T>())].into(),
                             optional_properties: [].into(),
                             additional_properties: false,
                         },
