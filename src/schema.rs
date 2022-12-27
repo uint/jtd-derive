@@ -1,4 +1,5 @@
-//! Internal Rust representation of a JSON Typedef schema.
+//! The internal Rust representation of a [_JSON Typedef_](https://jsontypedef.com/)
+//! schema.
 
 use std::collections::HashMap;
 
@@ -8,28 +9,40 @@ use serde::Serialize;
 // I'd normally try to separate the serialization logic from the Rust representation, but using
 // serde derives makes this so very easy. Damnit.
 
-/// The top level of a Typedef schema.
+/// The top level of a [_JSON Typedef_](https://jsontypedef.com/) schema.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct RootSchema {
+    /// The top-level
+    /// [definitions](https://jsontypedef.com/docs/jtd-in-5-minutes/#ref-schemas).
     #[serde(skip_serializing_if = "HashMap::is_empty")]
     pub definitions: HashMap<&'static str, Schema>,
+    /// The top-level schema.
     #[serde(flatten)]
     pub schema: Schema,
 }
 
-/// A Typedef schema.
+/// A [_JSON Typedef_](https://jsontypedef.com/) schema.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct Schema {
+    /// The [metadata](https://jsontypedef.com/docs/jtd-in-5-minutes/#the-metadata-keyword).
     #[serde(skip_serializing_if = "Metadata::is_empty")]
     pub metadata: Metadata,
+    /// The actual schema.
     #[serde(flatten)]
     pub ty: SchemaType,
+    /// Whether this schema is nullable.
     #[serde(skip_serializing_if = "is_false")]
     pub nullable: bool,
 }
 
-impl Schema {
-    pub fn empty() -> Self {
+fn is_false(v: &bool) -> bool {
+    !*v
+}
+
+impl Default for Schema {
+    /// Provides an [empty schema](https://jsontypedef.com/docs/jtd-in-5-minutes/#empty-schemas).
+    /// Empty schemas accept any JSON data.
+    fn default() -> Self {
         Self {
             metadata: Metadata::default(),
             ty: SchemaType::Empty,
@@ -38,19 +51,26 @@ impl Schema {
     }
 }
 
+/// How to refer to a given schema. Used mostly for referring to a schema definition
+/// using the ["ref" form](https://jsontypedef.com/docs/jtd-in-5-minutes/#ref-schemas).
+///
+/// The [`Generator`](crate::gen::Generator) decides how to use this information to
+/// generate an actual identifier.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Names {
+    /// The short name. Most of the time this is just the ident of the Rust type.
     pub short: &'static str,
+    /// The long name. Most of the time this is the full path of the Rust type, starting
+    /// with the crate name.
     pub long: &'static str,
+    /// Names of any type arguments applied to the generic Rust type.
     pub type_params: Vec<Names>,
+    /// The values of constant arguments represented as strings.
     pub const_params: Vec<String>,
 }
 
-fn is_false(v: &bool) -> bool {
-    !*v
-}
-
-/// The 8 "forms" a schema can take.
+/// The 8 forms a schema can take. For more info
+/// [see here](https://jsontypedef.com/docs/jtd-in-5-minutes/#what-is-a-json-type-definition-schema).
 #[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 #[serde(untagged)]
 pub enum SchemaType {
@@ -123,15 +143,21 @@ impl TypeSchema {
     }
 }
 
-/// Schema metadata.
+/// Schema [metadata](https://jsontypedef.com/docs/jtd-in-5-minutes/#the-metadata-keyword).
+///
+/// Metadata is a freeform map and a way to extend Typedef. The spec doesn't specify
+/// what might go in there. By default, `jtd_derive` doesn't generate any metadata.
 #[derive(Default, Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct Metadata(HashMap<&'static str, serde_json::Value>);
 
 impl Metadata {
+    /// Construct a [`Metadata`] object from something that can be converted
+    /// to the appropriate hashmap.
     pub fn from_map(m: impl Into<HashMap<&'static str, serde_json::Value>>) -> Self {
         Self(m.into())
     }
 
+    /// Returns `true` if there are no metadata entries.
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -148,7 +174,7 @@ mod tests {
         let repr = RootSchema {
             schema: Schema {
                 ty: SchemaType::Empty,
-                ..Schema::empty()
+                ..Schema::default()
             },
             definitions: HashMap::new(),
         };
@@ -163,7 +189,7 @@ mod tests {
                 ty: SchemaType::Type {
                     r#type: TypeSchema::Int16,
                 },
-                ..Schema::empty()
+                ..Schema::default()
             },
             definitions: HashMap::new(),
         };
@@ -182,7 +208,7 @@ mod tests {
                     r#type: TypeSchema::Int16,
                 },
                 nullable: true,
-                ..Schema::empty()
+                ..Schema::default()
             },
             definitions: HashMap::new(),
         };
@@ -205,7 +231,7 @@ mod tests {
                     r#type: TypeSchema::Int16,
                 },
                 nullable: false,
-                ..Schema::empty()
+                ..Schema::default()
             },
             definitions: HashMap::new(),
         };
@@ -223,7 +249,7 @@ mod tests {
                 ty: SchemaType::Enum {
                     r#enum: vec!["FOO", "BAR", "BAZ"],
                 },
-                ..Schema::empty()
+                ..Schema::default()
             },
             definitions: HashMap::new(),
         };
@@ -244,10 +270,10 @@ mod tests {
                             r#enum: vec!["FOO", "BAR", "BAZ"],
                         },
                         nullable: true,
-                        ..Schema::empty()
+                        ..Schema::default()
                     }),
                 },
-                ..Schema::empty()
+                ..Schema::default()
             },
             definitions: HashMap::new(),
         };
@@ -270,7 +296,7 @@ mod tests {
                                 ty: SchemaType::Type {
                                     r#type: TypeSchema::String,
                                 },
-                                ..Schema::empty()
+                                ..Schema::default()
                             },
                         ),
                         (
@@ -279,7 +305,7 @@ mod tests {
                                 ty: SchemaType::Type {
                                     r#type: TypeSchema::Boolean,
                                 },
-                                ..Schema::empty()
+                                ..Schema::default()
                             },
                         ),
                     ]
@@ -287,7 +313,7 @@ mod tests {
                     optional_properties: [].into(),
                     additional_properties: false,
                 },
-                ..Schema::empty()
+                ..Schema::default()
             },
             definitions: HashMap::new(),
         };
@@ -315,7 +341,7 @@ mod tests {
                                 ty: SchemaType::Type {
                                     r#type: TypeSchema::String,
                                 },
-                                ..Schema::empty()
+                                ..Schema::default()
                             },
                         ),
                         (
@@ -324,7 +350,7 @@ mod tests {
                                 ty: SchemaType::Type {
                                     r#type: TypeSchema::Boolean,
                                 },
-                                ..Schema::empty()
+                                ..Schema::default()
                             },
                         ),
                     ]
@@ -335,13 +361,13 @@ mod tests {
                             ty: SchemaType::Type {
                                 r#type: TypeSchema::String,
                             },
-                            ..Schema::empty()
+                            ..Schema::default()
                         },
                     )]
                     .into(),
                     additional_properties: true,
                 },
-                ..Schema::empty()
+                ..Schema::default()
             },
             definitions: HashMap::new(),
         };
@@ -370,10 +396,10 @@ mod tests {
                         ty: SchemaType::Type {
                             r#type: TypeSchema::Boolean,
                         },
-                        ..Schema::empty()
+                        ..Schema::default()
                     }),
                 },
-                ..Schema::empty()
+                ..Schema::default()
             },
             definitions: HashMap::new(),
         };
@@ -401,14 +427,14 @@ mod tests {
                                             ty: SchemaType::Type {
                                                 r#type: TypeSchema::String,
                                             },
-                                            ..Schema::empty()
+                                            ..Schema::default()
                                         },
                                     )]
                                     .into(),
                                     optional_properties: [].into(),
                                     additional_properties: false,
                                 },
-                                ..Schema::empty()
+                                ..Schema::default()
                             },
                         ),
                         (
@@ -422,7 +448,7 @@ mod tests {
                                                 ty: SchemaType::Type {
                                                     r#type: TypeSchema::String,
                                                 },
-                                                ..Schema::empty()
+                                                ..Schema::default()
                                             },
                                         ),
                                         (
@@ -431,7 +457,7 @@ mod tests {
                                                 ty: SchemaType::Enum {
                                                     r#enum: vec!["FREE", "PAID"],
                                                 },
-                                                ..Schema::empty()
+                                                ..Schema::default()
                                             },
                                         ),
                                     ]
@@ -439,7 +465,7 @@ mod tests {
                                     optional_properties: [].into(),
                                     additional_properties: false,
                                 },
-                                ..Schema::empty()
+                                ..Schema::default()
                             },
                         ),
                         (
@@ -453,7 +479,7 @@ mod tests {
                                                 ty: SchemaType::Type {
                                                     r#type: TypeSchema::String,
                                                 },
-                                                ..Schema::empty()
+                                                ..Schema::default()
                                             },
                                         ),
                                         (
@@ -462,7 +488,7 @@ mod tests {
                                                 ty: SchemaType::Type {
                                                     r#type: TypeSchema::Boolean,
                                                 },
-                                                ..Schema::empty()
+                                                ..Schema::default()
                                             },
                                         ),
                                     ]
@@ -470,13 +496,13 @@ mod tests {
                                     optional_properties: [].into(),
                                     additional_properties: false,
                                 },
-                                ..Schema::empty()
+                                ..Schema::default()
                             },
                         ),
                     ]
                     .into(),
                 },
-                ..Schema::empty()
+                ..Schema::default()
             },
             definitions: HashMap::new(),
         };
@@ -520,7 +546,7 @@ mod tests {
                                 ty: SchemaType::Ref {
                                     r#ref: "coordinates",
                                 },
-                                ..Schema::empty()
+                                ..Schema::default()
                             },
                         ),
                         (
@@ -529,7 +555,7 @@ mod tests {
                                 ty: SchemaType::Ref {
                                     r#ref: "coordinates",
                                 },
-                                ..Schema::empty()
+                                ..Schema::default()
                             },
                         ),
                     ]
@@ -537,7 +563,7 @@ mod tests {
                     optional_properties: [].into(),
                     additional_properties: false,
                 },
-                ..Schema::empty()
+                ..Schema::default()
             },
             definitions: [(
                 "coordinates",
@@ -550,7 +576,7 @@ mod tests {
                                     ty: SchemaType::Type {
                                         r#type: TypeSchema::Float32,
                                     },
-                                    ..Schema::empty()
+                                    ..Schema::default()
                                 },
                             ),
                             (
@@ -559,7 +585,7 @@ mod tests {
                                     ty: SchemaType::Type {
                                         r#type: TypeSchema::Float32,
                                     },
-                                    ..Schema::empty()
+                                    ..Schema::default()
                                 },
                             ),
                         ]
@@ -567,7 +593,7 @@ mod tests {
                         optional_properties: [].into(),
                         additional_properties: false,
                     },
-                    ..Schema::empty()
+                    ..Schema::default()
                 },
             )]
             .into(),

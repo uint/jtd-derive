@@ -103,7 +103,7 @@ fn gen_enum_schema(
                     ty: SchemaType::Enum {
                         r#enum: [#(stringify!(#idents)),*].into(),
                     },
-                    ..::jtd_derive::schema::Schema::empty()
+                    ..::jtd_derive::schema::Schema::default()
                 }
             };
 
@@ -118,7 +118,7 @@ fn gen_enum_schema(
                             additional_properties: true,
                             optional_properties: [].into(),
                         },
-                        ..::jtd_derive::schema::Schema::empty()
+                        ..::jtd_derive::schema::Schema::default()
                     }
                 }),
             }
@@ -151,7 +151,7 @@ fn gen_enum_schema(
                         discriminator: #tag,
                         mapping: [#((stringify!(#idents), #variants)),*].into(),
                     },
-                    ..::jtd_derive::schema::Schema::empty()
+                    ..::jtd_derive::schema::Schema::default()
                 }
             })
         }
@@ -168,7 +168,7 @@ fn gen_named_fields(fields: &FieldsNamed, additional: bool) -> TokenStream {
                 optional_properties: [].into(),
                 additional_properties: #additional,
             },
-            ..::jtd_derive::schema::Schema::empty()
+            ..::jtd_derive::schema::Schema::default()
         }
     }
 }

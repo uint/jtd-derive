@@ -11,13 +11,21 @@ use crate::schema::{Names, Schema, SchemaType, TypeSchema};
 
 pub use jtd_derive_macros::JsonTypedef;
 
+/// Types that have an associated [_Typedef_](https://jsontypedef.com/) schema.
 pub trait JsonTypedef {
+    /// Generate the [`Schema`] for the implementor type, according to how
+    /// the [`Generator`] is configured.
     fn schema(generator: &mut Generator) -> Schema;
 
+    /// Returns `true` if this type can appear in the top-level definitions
+    /// and be referenced using the ["ref" form](https://jsontypedef.com/docs/jtd-in-5-minutes/#ref-schemas).
     fn referenceable() -> bool {
         true
     }
 
+    /// Returns info about how to refer to this type within the
+    /// [_Typedef_](https://jsontypedef.com/) schema.
+    /// Mostly used to generate a name for the top-level definitions.
     fn names() -> Names;
 }
 
@@ -30,7 +38,7 @@ macro_rules! impl_primitives {
                         ty: SchemaType::Type {
                             r#type: TypeSchema::$out,
                         },
-                        ..Schema::empty()
+                        ..Schema::default()
                     }
                 }
 
@@ -84,7 +92,7 @@ macro_rules! impl_wrappers {
                         ty: SchemaType::Type {
                             r#type: TypeSchema::$out,
                         },
-                        ..Schema::empty()
+                        ..Schema::default()
                     }
                 }
 
@@ -162,7 +170,7 @@ macro_rules! impl_array_like {
                         ty: SchemaType::Elements {
                             elements: Box::new(gen.sub_schema::<T>()),
                         },
-                        ..Schema::empty()
+                        ..Schema::default()
                     }
                 }
 
@@ -199,7 +207,7 @@ impl<T: JsonTypedef, const N: usize> JsonTypedef for [T; N] {
             ty: SchemaType::Elements {
                 elements: Box::new(gen.sub_schema::<T>()),
             },
-            ..Schema::empty()
+            ..Schema::default()
         }
     }
 
@@ -226,7 +234,7 @@ macro_rules! impl_map_like {
                         ty: SchemaType::Values {
                             values: Box::new(gen.sub_schema::<V>()),
                         },
-                        ..Schema::empty()
+                        ..Schema::default()
                     }
                 }
 
@@ -321,7 +329,7 @@ impl<'a> JsonTypedef for Arguments<'a> {
             ty: SchemaType::Type {
                 r#type: TypeSchema::String,
             },
-            ..Schema::empty()
+            ..Schema::default()
         }
     }
 
@@ -350,7 +358,7 @@ macro_rules! impl_range {
                             optional_properties: [].into(),
                             additional_properties: false,
                         },
-                        ..Schema::empty()
+                        ..Schema::default()
                     }
                 }
 
