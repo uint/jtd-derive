@@ -31,12 +31,8 @@ pub struct Schema {
     #[serde(flatten)]
     pub ty: SchemaType,
     /// Whether this schema is nullable.
-    #[serde(skip_serializing_if = "is_false")]
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub nullable: bool,
-}
-
-fn is_false(v: &bool) -> bool {
-    !*v
 }
 
 impl Default for Schema {
@@ -84,15 +80,13 @@ pub enum SchemaType {
     Elements {
         elements: Box<Schema>,
     },
+    #[serde(rename_all = "camelCase")]
     Properties {
         #[serde(skip_serializing_if = "HashMap::is_empty")]
         properties: HashMap<&'static str, Schema>,
-        #[serde(
-            skip_serializing_if = "HashMap::is_empty",
-            rename = "optionalProperties"
-        )]
+        #[serde(skip_serializing_if = "HashMap::is_empty")]
         optional_properties: HashMap<&'static str, Schema>,
-        #[serde(skip_serializing_if = "is_false", rename = "additionalProperties")]
+        #[serde(skip_serializing_if = "std::ops::Not::not")]
         additional_properties: bool,
     },
     Values {
