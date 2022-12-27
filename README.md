@@ -5,18 +5,9 @@ types.
 
 # Status
 
-Work in progress.
+Sort of usable, but lacking important features like better `serde` support.
 
 The API is unstable. Expect breaking changes between minor version bumps.
-
-Essential work:
-
-- [x] Working trait and derive for most types
-- [x] Attribute parsing
-- [x] Integration tests
-- [ ] Support as many `serde` attributes as possible
-- [ ] Figure out an API
-- [ ] Publish to crates.io
 
 # Why?
 
