@@ -1,10 +1,10 @@
 [package]
 name = "jtd-derive-macros"
 description = "Proc macros for jtd-gen"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Tomasz Kurcz"]
-license = "MIT"
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/uint/jtd-derive"
 documentation = "https://docs.rs/jtd-derive-macros"
 categories = ["encoding"]
