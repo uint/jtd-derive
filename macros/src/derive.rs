@@ -61,7 +61,7 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
 }
 
 fn gen_struct_schema(
-    _ctx: &Container,
+    ctx: &Container,
     ident: &Ident,
     s: DataStruct,
 ) -> Result<TokenStream, syn::Error> {
@@ -71,7 +71,7 @@ fn gen_struct_schema(
             "jtd-derive does not support empty cstruct-like structs",
         )),
 
-        Fields::Named(fields) => Ok(gen_named_fields(&fields, true)),
+        Fields::Named(fields) => Ok(gen_named_fields(&fields, !ctx.deny_unknown_fields)),
         Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
             let ty = &fields.unnamed[0].ty;
 
@@ -141,7 +141,7 @@ fn gen_enum_schema(
                 .map(|v| {
                     (
                         &v.ident,
-                        gen_named_fields(unwrap_fields_named(&v.fields), true),
+                        gen_named_fields(unwrap_fields_named(&v.fields), !ctx.deny_unknown_fields),
                     )
                 })
                 .unzip();

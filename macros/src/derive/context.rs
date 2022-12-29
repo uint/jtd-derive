@@ -8,6 +8,7 @@ const ATTR_IDENT: &str = "typedef";
 pub struct Container {
     pub no_serde: bool,
     pub tag_type: TagType,
+    pub deny_unknown_fields: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -58,6 +59,7 @@ impl Container {
             sdi::attr::TagType::None =>
                 return Err(syn::Error::new_spanned(&input.ident, "this type uses the untagged enum representation, but `jtd_derive` doesn't support it")),
         };
+        cont.deny_unknown_fields = serde.deny_unknown_fields();
 
         let typedef_attrs = input.attrs.iter().filter(|attr| {
             attr.path
@@ -111,6 +113,17 @@ impl Container {
                         Err(syn::Error::new_spanned(
                             p,
                             "expected something like `tag = \"...\"`",
+                        ))
+                    }
+                }
+                "deny_unknown_fields" => {
+                    if let Meta::Path(_) = p {
+                        cont.deny_unknown_fields = true;
+                        Ok(())
+                    } else {
+                        Err(syn::Error::new_spanned(
+                            p,
+                            "`the `deny_unknown_fields` parameter takes no value",
                         ))
                     }
                 }
