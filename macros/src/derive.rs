@@ -24,6 +24,24 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
         }
     }
 
+    if let Some(from_type) = ctx.type_from {
+        return Ok(parse_quote! {
+            impl #impl_generics ::jtd_derive::JsonTypedef for #ident #ty_generics #where_clause {
+                fn schema(gen: &mut ::jtd_derive::gen::Generator) -> ::jtd_derive::schema::Schema {
+                    <#from_type as ::jtd_derive::JsonTypedef>::schema(gen)
+                }
+
+                fn referenceable() -> bool {
+                    <#from_type as ::jtd_derive::JsonTypedef>::referenceable()
+                }
+
+                fn names() -> ::jtd_derive::schema::Names {
+                    <#from_type as ::jtd_derive::JsonTypedef>::names()
+                }
+            }
+        });
+    }
+
     let type_params = input.generics.type_params().map(|p| &p.ident);
     let const_params = input.generics.const_params().map(|p| &p.ident);
 

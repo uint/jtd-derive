@@ -1,6 +1,6 @@
 use itertools::{Either, Itertools as _};
 use serde_derive_internals as sdi;
-use syn::{Attribute, DeriveInput, Lit, Meta, NestedMeta};
+use syn::{Attribute, DeriveInput, Lit, Meta, NestedMeta, Type};
 
 const ATTR_IDENT: &str = "typedef";
 
@@ -10,6 +10,7 @@ pub struct Container {
     pub tag_type: TagType,
     pub deny_unknown_fields: bool,
     pub transparent: bool,
+    pub type_from: Option<Type>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -62,6 +63,7 @@ impl Container {
         };
         cont.deny_unknown_fields = serde.deny_unknown_fields();
         cont.transparent = serde.transparent();
+        cont.type_from = serde.type_from().cloned();
 
         let typedef_attrs = input.attrs.iter().filter(|attr| {
             attr.path
@@ -141,6 +143,21 @@ impl Container {
                         Err(syn::Error::new_spanned(
                             p,
                             "`the `transparent` parameter takes no value",
+                        ))
+                    }
+                }
+                "from" => {
+                    if let Meta::NameValue(v) = p {
+                        if let Lit::Str(s) = v.lit {
+                            cont.type_from = Some(s.parse()?);
+                            Ok(())
+                        } else {
+                            Err(syn::Error::new_spanned(v.lit, "expected a string literal"))
+                        }
+                    } else {
+                        Err(syn::Error::new_spanned(
+                            p,
+                            "expected something like `tag = \"...\"`",
                         ))
                     }
                 }

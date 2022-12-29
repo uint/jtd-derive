@@ -111,3 +111,24 @@ fn transparent() {
         serde_json::json! {{ "type": "uint32" }}
     );
 }
+
+#[derive(JsonTypedef, Deserialize)]
+#[serde(from = "Transparent")]
+#[allow(dead_code)]
+struct FromStruct {
+    x: Transparent,
+}
+
+impl From<Transparent> for FromStruct {
+    fn from(x: Transparent) -> Self {
+        Self { x }
+    }
+}
+
+#[test]
+fn from() {
+    assert_eq!(
+        serde_json::to_value(Generator::default().into_root_schema::<Transparent>()).unwrap(),
+        serde_json::json! {{ "type": "uint32" }}
+    );
+}
