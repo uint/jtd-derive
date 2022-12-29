@@ -12,7 +12,7 @@ enum StructVariants {
 #[test]
 fn enum_respects_serde_tag_attr() {
     assert_eq!(
-        serde_json::to_value(StructVariants::schema(&mut Generator::default())).unwrap(),
+        serde_json::to_value(Generator::default().into_root_schema::<StructVariants>()).unwrap(),
         serde_json::json! {{
             "discriminator": "type",
             "mapping": {

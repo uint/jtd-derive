@@ -55,7 +55,9 @@ impl Generator {
     /// Generate the root schema for the given type according to the settings.
     /// This consumes the generator.
     pub fn into_root_schema<T: JsonTypedef>(mut self) -> RootSchema {
-        let schema = self.sub_schema::<T>();
+        let schema = self.sub_schema_impl::<T>(true);
+        self.clean_up_defs();
+
         let definitions = self
             .definitions
             .into_iter()
@@ -75,14 +77,19 @@ impl Generator {
     /// new types. Most commonly you'll derive that trait. It's unlikely you'll
     /// need to call this method explicitly.
     pub fn sub_schema<T: JsonTypedef>(&mut self) -> Schema {
+        self.sub_schema_impl::<T>(false)
+    }
+
+    fn sub_schema_impl<T: JsonTypedef>(&mut self, top_level: bool) -> Schema {
         let names = T::names();
+        let inlining = top_level || self.inlining;
 
         let inlined_schema = match self.definitions.get(&names) {
             Some(DefinitionState::Finished(schema)) => {
                 // we had already built a schema for this type.
                 // no need to do it again.
 
-                (!T::referenceable() || (self.inlining && !self.refs.contains(&names)))
+                (!T::referenceable() || (inlining && !self.refs.contains(&names)))
                     .then_some(schema.clone())
             }
             Some(DefinitionState::Processing) => {
@@ -103,7 +110,7 @@ impl Generator {
                         .unwrap()
                         .finalize(schema.clone());
 
-                    (self.inlining && !self.refs.contains(&names)).then_some(schema)
+                    (inlining && !self.refs.contains(&names)).then_some(schema)
                 } else {
                     Some(T::schema(self))
                 }
@@ -120,6 +127,19 @@ impl Generator {
             self.refs.insert(names);
             schema
         })
+    }
+
+    fn clean_up_defs(&mut self) {
+        let to_remove: Vec<_> = self
+            .definitions
+            .keys()
+            .filter(|names| !self.refs.contains(names))
+            .cloned()
+            .collect();
+
+        for names in to_remove {
+            self.definitions.remove(&names);
+        }
     }
 }
 

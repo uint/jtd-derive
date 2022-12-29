@@ -10,7 +10,7 @@ struct Cstruct {
 #[test]
 fn cstruct() {
     assert_eq!(
-        serde_json::to_value(Cstruct::schema(&mut Generator::default())).unwrap(),
+        serde_json::to_value(Generator::default().into_root_schema::<Cstruct>()).unwrap(),
         serde_json::json! {{
             "properties": {
                 "bar": { "type": "uint32" },
@@ -31,9 +31,9 @@ struct CstructWithGenerics<'a, T, const N: usize> {
 #[test]
 fn cstruct_with_generics() {
     assert_eq!(
-        serde_json::to_value(CstructWithGenerics::<'_, u32, 2>::schema(
-            &mut Generator::default()
-        ))
+        serde_json::to_value(
+            Generator::default().into_root_schema::<CstructWithGenerics::<'_, u32, 2>>()
+        )
         .unwrap(),
         serde_json::json! {{
             "properties": {
@@ -52,7 +52,7 @@ struct Newtype(u32);
 #[test]
 fn newtype_like() {
     assert_eq!(
-        serde_json::to_value(Newtype::schema(&mut Generator::default())).unwrap(),
+        serde_json::to_value(Generator::default().into_root_schema::<Newtype>()).unwrap(),
         serde_json::json! {{
             "type": "uint32",
         }}
