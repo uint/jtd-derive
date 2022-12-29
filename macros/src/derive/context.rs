@@ -62,7 +62,7 @@ impl Container {
         let typedef_attrs = input.attrs.iter().filter(|attr| {
             attr.path
                 .get_ident()
-                .map(|ident| ident.to_string() == ATTR_IDENT)
+                .map(|ident| *ident == ATTR_IDENT)
                 .unwrap_or(false)
         });
 
@@ -93,10 +93,9 @@ impl Container {
             match p
                 .path()
                 .get_ident()
-                .ok_or(syn::Error::new_spanned(
-                    p.path(),
-                    "jtd-derive parameter must be an ident",
-                ))?
+                .ok_or_else(|| {
+                    syn::Error::new_spanned(p.path(), "jtd-derive parameter must be an ident")
+                })?
                 .to_string()
                 .as_str()
             {

@@ -21,17 +21,15 @@
 //!     x: u32,
 //! }
 //!
-//! fn main() {
-//!     let root_schema = Generator::default().into_root_schema::<Foo>();
-//!     let json_schema = serde_json::to_value(&root_schema).unwrap();
+//! let root_schema = Generator::default().into_root_schema::<Foo>();
+//! let json_schema = serde_json::to_value(&root_schema).unwrap();
 //!
-//!     assert_eq!(json_schema, serde_json::json!{ {
-//!         "properties": {
-//!             "x": { "type": "uint32" }
-//!         },
-//!         "additionalProperties": true,
-//!     } });
-//! }
+//! assert_eq!(json_schema, serde_json::json!{ {
+//!     "properties": {
+//!         "x": { "type": "uint32" }
+//!     },
+//!     "additionalProperties": true,
+//! } });
 //! ```
 
 pub mod gen;

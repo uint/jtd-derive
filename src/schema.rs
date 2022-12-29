@@ -15,7 +15,7 @@ pub struct RootSchema {
     /// The top-level
     /// [definitions](https://jsontypedef.com/docs/jtd-in-5-minutes/#ref-schemas).
     #[serde(skip_serializing_if = "HashMap::is_empty")]
-    pub definitions: HashMap<&'static str, Schema>,
+    pub definitions: HashMap<String, Schema>,
     /// The top-level schema.
     #[serde(flatten)]
     pub schema: Schema,
@@ -52,7 +52,7 @@ impl Default for Schema {
 ///
 /// The [`Generator`](crate::gen::Generator) decides how to use this information to
 /// generate an actual identifier.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct Names {
     /// The short name. Most of the time this is just the ident of the Rust type.
     pub short: &'static str,
@@ -98,7 +98,7 @@ pub enum SchemaType {
         mapping: HashMap<&'static str, Schema>,
     },
     Ref {
-        r#ref: &'static str,
+        r#ref: String,
     },
 }
 
@@ -225,7 +225,6 @@ mod tests {
                     r#type: TypeSchema::Int16,
                 },
                 nullable: false,
-                ..Schema::default()
             },
             definitions: HashMap::new(),
         };
@@ -538,7 +537,7 @@ mod tests {
                             "userLoc",
                             Schema {
                                 ty: SchemaType::Ref {
-                                    r#ref: "coordinates",
+                                    r#ref: "coordinates".to_string(),
                                 },
                                 ..Schema::default()
                             },
@@ -547,7 +546,7 @@ mod tests {
                             "serverLoc",
                             Schema {
                                 ty: SchemaType::Ref {
-                                    r#ref: "coordinates",
+                                    r#ref: "coordinates".to_string(),
                                 },
                                 ..Schema::default()
                             },
@@ -560,7 +559,7 @@ mod tests {
                 ..Schema::default()
             },
             definitions: [(
-                "coordinates",
+                "coordinates".to_string(),
                 Schema {
                     ty: SchemaType::Properties {
                         properties: [
