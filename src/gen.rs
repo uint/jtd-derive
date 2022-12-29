@@ -194,6 +194,7 @@ impl Debug for NamingStrategy {
         let example = Names {
             short: "Foo",
             long: "my_crate::Foo",
+            nullable: false,
             type_params: vec![u32::names()],
             const_params: vec!["5".to_string()],
         };

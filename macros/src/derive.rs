@@ -51,6 +51,7 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
                 ::jtd_derive::schema::Names {
                     short: stringify!(#ident),
                     long: concat!(module_path!(), "::", stringify!(#ident)),
+                    nullable: false,
                     type_params: [#(#type_params::names()),*].into(),
                     const_params: [#(#const_params.to_string()),*].into(),
                 }

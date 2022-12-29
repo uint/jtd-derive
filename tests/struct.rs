@@ -58,3 +58,27 @@ fn newtype_like() {
         }}
     );
 }
+
+#[derive(JsonTypedef)]
+#[allow(dead_code)]
+struct Nested {
+    inner: Newtype,
+}
+
+#[test]
+fn nested() {
+    assert_eq!(
+        serde_json::to_value(Generator::default().into_root_schema::<Nested>()).unwrap(),
+        serde_json::json! {{
+            "definitions": {
+                "r#struct::Newtype": {
+                    "type": "uint32",
+                },
+            },
+            "properties": {
+                "inner": { "ref": "r#struct::Newtype" }
+            },
+            "additionalProperties": true,
+        }}
+    );
+}

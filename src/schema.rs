@@ -59,6 +59,8 @@ pub struct Names {
     /// The long name. Most of the time this is the full path of the Rust type, starting
     /// with the crate name.
     pub long: &'static str,
+    /// Nullability.
+    pub nullable: bool,
     /// Names of any type arguments applied to the generic Rust type.
     pub type_params: Vec<Names>,
     /// The values of constant arguments represented as strings.
