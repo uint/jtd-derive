@@ -1,7 +1,7 @@
 mod context;
 
 use proc_macro2::TokenStream;
-use quote::quote_spanned;
+use quote::{quote, quote_spanned};
 use syn::{
     parse_quote, DataEnum, DataStruct, DeriveInput, Fields, FieldsNamed, GenericParam, Generics,
     Ident, ItemImpl,
@@ -24,26 +24,62 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
         }
     }
 
-    if let Some(from_type) = ctx.type_from {
-        return Ok(parse_quote! {
-            impl #impl_generics ::jtd_derive::JsonTypedef for #ident #ty_generics #where_clause {
-                fn schema(gen: &mut ::jtd_derive::gen::Generator) -> ::jtd_derive::schema::Schema {
-                    <#from_type as ::jtd_derive::JsonTypedef>::schema(gen)
-                }
-
-                fn referenceable() -> bool {
-                    <#from_type as ::jtd_derive::JsonTypedef>::referenceable()
-                }
-
-                fn names() -> ::jtd_derive::schema::Names {
-                    <#from_type as ::jtd_derive::JsonTypedef>::names()
-                }
-            }
-        });
-    }
-
     let type_params = input.generics.type_params().map(|p| &p.ident);
     let const_params = input.generics.const_params().map(|p| &p.ident);
+
+    let names_impl = quote! {
+        fn names() -> ::jtd_derive::schema::Names {
+            ::jtd_derive::schema::Names {
+                short: stringify!(#ident),
+                long: concat!(module_path!(), "::", stringify!(#ident)),
+                nullable: false,
+                type_params: [#(#type_params::names()),*].into(),
+                const_params: [#(#const_params.to_string()),*].into(),
+            }
+        }
+    };
+
+    match (&ctx.type_from, &ctx.type_try_from) {
+        (None, None) => {}
+        (Some(ty), None) => {
+            return Ok(parse_quote! {
+                impl #impl_generics ::jtd_derive::JsonTypedef for #ident #ty_generics #where_clause {
+                    fn schema(gen: &mut ::jtd_derive::gen::Generator) -> ::jtd_derive::schema::Schema {
+                        <#ty as ::jtd_derive::JsonTypedef>::schema(gen)
+                    }
+
+                    fn referenceable() -> bool {
+                        <#ty as ::jtd_derive::JsonTypedef>::referenceable()
+                    }
+
+                    fn names() -> ::jtd_derive::schema::Names {
+                        <#ty as ::jtd_derive::JsonTypedef>::names()
+                    }
+                }
+            });
+        }
+        (None, Some(ty)) => {
+            return Ok(parse_quote! {
+                impl #impl_generics ::jtd_derive::JsonTypedef for #ident #ty_generics #where_clause {
+                    fn schema(gen: &mut ::jtd_derive::gen::Generator) -> ::jtd_derive::schema::Schema {
+                        <#ty as ::jtd_derive::JsonTypedef>::schema(gen)
+                    }
+
+                    fn referenceable() -> bool {
+                        true
+                    }
+
+                    #names_impl
+                }
+            });
+        }
+        (Some(_), Some(_)) => {
+            return Err(syn::Error::new_spanned(
+                ident,
+                "can't set both `#[typedef(from = \"...\")]` and `#[typedef(try_from = \"...\")]`",
+            ));
+        }
+    }
 
     let res = match input.data {
         syn::Data::Struct(s) => gen_struct_schema(&ctx, &ident, s)?,
@@ -65,15 +101,7 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
                 true
             }
 
-            fn names() -> ::jtd_derive::schema::Names {
-                ::jtd_derive::schema::Names {
-                    short: stringify!(#ident),
-                    long: concat!(module_path!(), "::", stringify!(#ident)),
-                    nullable: false,
-                    type_params: [#(#type_params::names()),*].into(),
-                    const_params: [#(#const_params.to_string()),*].into(),
-                }
-            }
+            #names_impl
         }
     })
 }

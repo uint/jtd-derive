@@ -11,6 +11,7 @@ pub struct Container {
     pub deny_unknown_fields: bool,
     pub transparent: bool,
     pub type_from: Option<Type>,
+    pub type_try_from: Option<Type>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -64,6 +65,7 @@ impl Container {
         cont.deny_unknown_fields = serde.deny_unknown_fields();
         cont.transparent = serde.transparent();
         cont.type_from = serde.type_from().cloned();
+        cont.type_try_from = serde.type_try_from().cloned();
 
         let typedef_attrs = input.attrs.iter().filter(|attr| {
             attr.path
@@ -127,11 +129,7 @@ impl Container {
                     } else {
                         Err(syn::Error::new_spanned(
                             p,
-                            concat!(
-                                "the `",
-                                stringify!(deny_unknown_fields),
-                                "` parameter takes no value"
-                            ),
+                            "the `deny_unknown_fields` parameter takes no value",
                         ))
                     }
                 }
@@ -142,7 +140,7 @@ impl Container {
                     } else {
                         Err(syn::Error::new_spanned(
                             p,
-                            "`the `transparent` parameter takes no value",
+                            "the `transparent` parameter takes no value",
                         ))
                     }
                 }
@@ -157,7 +155,22 @@ impl Container {
                     } else {
                         Err(syn::Error::new_spanned(
                             p,
-                            "expected something like `tag = \"...\"`",
+                            "expected something like `from = \"FromType\"`",
+                        ))
+                    }
+                }
+                "try_from" => {
+                    if let Meta::NameValue(v) = p {
+                        if let Lit::Str(s) = v.lit {
+                            cont.type_try_from = Some(s.parse()?);
+                            Ok(())
+                        } else {
+                            Err(syn::Error::new_spanned(v.lit, "expected a string literal"))
+                        }
+                    } else {
+                        Err(syn::Error::new_spanned(
+                            p,
+                            "expected something like `try_from = \"FromType\"`",
                         ))
                     }
                 }
