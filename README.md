@@ -1,4 +1,10 @@
-# jtd-derive &emsp; ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/uint/jtd-derive/rust.yml?branch=main) ![Crates.io](https://img.shields.io/crates/l/jtd-derive) ![Crates.io](https://img.shields.io/crates/v/jtd-derive) ![docs.rs](https://img.shields.io/docsrs/jtd-derive)
+# jtd-derive &emsp; ![Build Status] ![License] ![Version] ![Docs]
+
+[build status]:
+  https://img.shields.io/github/actions/workflow/status/uint/jtd-derive/rust.yml?branch=main
+[license]: https://img.shields.io/crates/l/jtd-derive
+[version]: https://img.shields.io/crates/v/jtd-derive
+[docs]: https://img.shields.io/docsrs/jtd-derive
 
 Generate [JSON Type Definition](https://jsontypedef.com/) schemas from Rust
 types.
