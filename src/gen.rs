@@ -11,47 +11,72 @@ use crate::{
 /// A configurable schema generator. An instance is meant to produce one
 /// [`RootSchema`] and be consumed in the process.
 ///
-/// For now, the generator is not configurable and the only way to
-/// construct one is by calling [`Generator::default()`].
-#[non_exhaustive]
+/// If you want to just use the sane defaults, try [`Generator::default()`].
+///
+/// Otherwise, you can configure schema generation using the builder.
+///
+/// # Examples
+///
+/// Using the default settings:
+///
+/// ```
+/// use jtd_derive::{JsonTypedef, gen::Generator};
+///
+/// #[derive(JsonTypedef)]
+/// struct Foo {
+///     x: u32,
+/// }
+///
+/// let root_schema = Generator::default().into_root_schema::<Foo>();
+/// let json_schema = serde_json::to_value(&root_schema).unwrap();
+///
+/// assert_eq!(json_schema, serde_json::json!{ {
+///     "properties": {
+///         "x": { "type": "uint32" }
+///     },
+///     "additionalProperties": true,
+/// } });
+/// ```
+///
+/// Using custom settings to force the top-level schema to be provided by ref:
+///
+/// ```
+/// use jtd_derive::{JsonTypedef, gen::Generator};
+///
+/// #[derive(JsonTypedef)]
+/// struct Foo {
+///     x: u32,
+/// }
+///
+/// let root_schema = Generator::builder().top_level_ref().build().into_root_schema::<Foo>();
+/// let json_schema = serde_json::to_value(&root_schema).unwrap();
+///
+/// assert_eq!(json_schema, serde_json::json!{ {
+///     "definitions": {
+///         "jtd_derive::Foo": {
+///             "properties": {
+///                 "x": { "type": "uint32" }
+///             },
+///             "additionalProperties": true,
+///         }
+///     },
+///     "ref": "jtd_derive::Foo",
+/// } });
+/// ```
 #[derive(Default, Debug)]
 pub struct Generator {
     naming_strategy: NamingStrategy,
     refs: HashSet<Names>,
     definitions: HashMap<Names, DefinitionState>,
-    inlining: bool,
-}
-
-#[derive(Debug, Clone)]
-enum DefinitionState {
-    Finished(Schema),
-    Processing,
-}
-
-impl DefinitionState {
-    fn unwrap(self) -> Schema {
-        if let Self::Finished(schema) = self {
-            schema
-        } else {
-            panic!()
-        }
-    }
-
-    fn finalize(&mut self, schema: Schema) {
-        match self {
-            DefinitionState::Finished(_) => panic!("schema already finalized"),
-            DefinitionState::Processing => *self = DefinitionState::Finished(schema),
-        }
-    }
-}
-
-impl Default for DefinitionState {
-    fn default() -> Self {
-        Self::Processing
-    }
+    inlining: Inlining,
 }
 
 impl Generator {
+    /// Provide a builder
+    pub fn builder() -> GeneratorBuilder {
+        GeneratorBuilder::default()
+    }
+
     /// Generate the root schema for the given type according to the settings.
     /// This consumes the generator.
     pub fn into_root_schema<T: JsonTypedef>(mut self) -> RootSchema {
@@ -82,7 +107,11 @@ impl Generator {
 
     fn sub_schema_impl<T: JsonTypedef>(&mut self, top_level: bool) -> Schema {
         let names = T::names();
-        let inlining = top_level || self.inlining;
+        let inlining = match self.inlining {
+            Inlining::Always => true,
+            Inlining::Normal => top_level,
+            Inlining::Never => false,
+        };
 
         let inlined_schema = match self.definitions.get(&names) {
             Some(DefinitionState::Finished(schema)) => {
@@ -140,6 +169,77 @@ impl Generator {
         for names in to_remove {
             self.definitions.remove(&names);
         }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+enum Inlining {
+    Always,
+    Normal,
+    Never,
+}
+
+impl Default for Inlining {
+    fn default() -> Self {
+        Inlining::Normal
+    }
+}
+
+#[derive(Default, Clone, Debug)]
+pub struct GeneratorBuilder {
+    inlining: Inlining,
+}
+
+impl GeneratorBuilder {
+    /// Always try to inline complex types rather than provide them using
+    /// definitions/refs. The exception is recursive types - these cannot
+    /// be expressed without a ref.
+    pub fn prefer_inline(&mut self) -> &mut Self {
+        self.inlining = Inlining::Always;
+        self
+    }
+
+    /// Where possible, provide types by ref even for the top-level type.
+    pub fn top_level_ref(&mut self) -> &mut Self {
+        self.inlining = Inlining::Never;
+        self
+    }
+
+    /// Finalize the configuration and get a `Generator`.
+    pub fn build(&self) -> Generator {
+        Generator {
+            inlining: self.inlining,
+            ..Generator::default()
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+enum DefinitionState {
+    Finished(Schema),
+    Processing,
+}
+
+impl DefinitionState {
+    fn unwrap(self) -> Schema {
+        if let Self::Finished(schema) = self {
+            schema
+        } else {
+            panic!()
+        }
+    }
+
+    fn finalize(&mut self, schema: Schema) {
+        match self {
+            DefinitionState::Finished(_) => panic!("schema already finalized"),
+            DefinitionState::Processing => *self = DefinitionState::Finished(schema),
+        }
+    }
+}
+
+impl Default for DefinitionState {
+    fn default() -> Self {
+        Self::Processing
     }
 }
 
