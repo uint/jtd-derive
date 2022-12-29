@@ -38,29 +38,34 @@ use crate::{
 /// } });
 /// ```
 ///
-/// Using custom settings to force the top-level schema to be provided by ref:
+/// Using custom settings:
 ///
 /// ```
-/// use jtd_derive::{JsonTypedef, gen::Generator};
+/// use jtd_derive::JsonTypedef;
+/// use jtd_derive::gen::{Generator, NamingStrategy};
 ///
 /// #[derive(JsonTypedef)]
 /// struct Foo {
 ///     x: u32,
 /// }
 ///
-/// let root_schema = Generator::builder().top_level_ref().build().into_root_schema::<Foo>();
+/// let root_schema = Generator::builder()
+///     .top_level_ref()
+///     .naming_strategy(NamingStrategy::short())
+///     .build()
+///     .into_root_schema::<Foo>();
 /// let json_schema = serde_json::to_value(&root_schema).unwrap();
 ///
 /// assert_eq!(json_schema, serde_json::json!{ {
 ///     "definitions": {
-///         "jtd_derive::Foo": {
+///         "Foo": {
 ///             "properties": {
 ///                 "x": { "type": "uint32" }
 ///             },
 ///             "additionalProperties": true,
 ///         }
 ///     },
-///     "ref": "jtd_derive::Foo",
+///     "ref": "Foo",
 /// } });
 /// ```
 #[derive(Default, Debug)]
@@ -185,9 +190,10 @@ impl Default for Inlining {
     }
 }
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Debug)]
 pub struct GeneratorBuilder {
     inlining: Inlining,
+    naming_strategy: Option<NamingStrategy>,
 }
 
 impl GeneratorBuilder {
@@ -205,10 +211,17 @@ impl GeneratorBuilder {
         self
     }
 
+    /// Use a different naming strategy.
+    pub fn naming_strategy(&mut self, strat: NamingStrategy) -> &mut Self {
+        self.naming_strategy = Some(strat);
+        self
+    }
+
     /// Finalize the configuration and get a `Generator`.
-    pub fn build(&self) -> Generator {
+    pub fn build(&mut self) -> Generator {
         Generator {
             inlining: self.inlining,
+            naming_strategy: self.naming_strategy.take().unwrap_or_default(),
             ..Generator::default()
         }
     }
@@ -243,7 +256,9 @@ impl Default for DefinitionState {
     }
 }
 
-struct NamingStrategy(Box<dyn Fn(&Names) -> String>);
+/// The naming strategy. The strategy decides how types are named in definitions/refs
+/// in the _Typedef_ schema.
+pub struct NamingStrategy(Box<dyn Fn(&Names) -> String>);
 
 impl NamingStrategy {
     /// A naming strategy that produces the stringified full path
@@ -276,6 +291,29 @@ impl NamingStrategy {
         }
 
         Self(Box::new(strategy))
+    }
+
+    pub fn short() -> Self {
+        fn strategy(names: &Names) -> String {
+            let params = names
+                .type_params
+                .iter()
+                .map(strategy)
+                .chain(names.const_params.clone())
+                .reduce(|l, r| format!("{}, {}", l, r));
+
+            match params {
+                Some(params) => format!("{}<{}>", names.short, params),
+                None => names.short.to_string(),
+            }
+        }
+
+        Self(Box::new(strategy))
+    }
+
+    /// A custom naming strategy.
+    pub fn custom<F: Fn(&Names) -> String + 'static>(fun: F) -> Self {
+        Self(Box::new(fun))
     }
 
     pub fn fun(&self) -> &dyn Fn(&Names) -> String {
