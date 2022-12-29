@@ -1,8 +1,9 @@
-# jtd-derive &emsp; [![Build Status]][actions] <picture><img alt="License" src="https://img.shields.io/crates/l/jtd-derive"></picture> [![Version]][crates.io] [![Docs]][docs.rs]
+# jtd-derive &emsp; [![Build Status]][actions] [![License]](#) [![Version]][crates.io] [![Docs]][docs.rs]
 
 [build status]:
   https://img.shields.io/github/actions/workflow/status/uint/jtd-derive/rust.yml?branch=main
 [actions]: https://github.com/uint/jtd-derive/actions?query=branch%3Amain
+[license]: https://img.shields.io/crates/l/jtd-derive
 [version]: https://img.shields.io/crates/v/jtd-derive
 [crates.io]: https://crates.io/crates/jtd-derive
 [docs]: https://img.shields.io/docsrs/jtd-derive
