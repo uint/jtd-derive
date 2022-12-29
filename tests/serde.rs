@@ -96,3 +96,18 @@ fn deny_unknown_fields() {
         serde_json::to_value(Generator::default().into_root_schema::<DenyEnum2>()).unwrap(),
     );
 }
+
+#[derive(JsonTypedef, Deserialize)]
+#[serde(transparent)]
+#[allow(dead_code)]
+struct Transparent {
+    x: u32,
+}
+
+#[test]
+fn transparent() {
+    assert_eq!(
+        serde_json::to_value(Generator::default().into_root_schema::<Transparent>()).unwrap(),
+        serde_json::json! {{ "type": "uint32" }}
+    );
+}

@@ -9,6 +9,7 @@ pub struct Container {
     pub no_serde: bool,
     pub tag_type: TagType,
     pub deny_unknown_fields: bool,
+    pub transparent: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -60,6 +61,7 @@ impl Container {
                 return Err(syn::Error::new_spanned(&input.ident, "this type uses the untagged enum representation, but `jtd_derive` doesn't support it")),
         };
         cont.deny_unknown_fields = serde.deny_unknown_fields();
+        cont.transparent = serde.transparent();
 
         let typedef_attrs = input.attrs.iter().filter(|attr| {
             attr.path
@@ -123,7 +125,22 @@ impl Container {
                     } else {
                         Err(syn::Error::new_spanned(
                             p,
-                            "`the `deny_unknown_fields` parameter takes no value",
+                            concat!(
+                                "the `",
+                                stringify!(deny_unknown_fields),
+                                "` parameter takes no value"
+                            ),
+                        ))
+                    }
+                }
+                "transparent" => {
+                    if let Meta::Path(_) = p {
+                        cont.transparent = true;
+                        Ok(())
+                    } else {
+                        Err(syn::Error::new_spanned(
+                            p,
+                            "`the `transparent` parameter takes no value",
                         ))
                     }
                 }

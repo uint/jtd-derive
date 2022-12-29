@@ -70,8 +70,24 @@ fn gen_struct_schema(
             ident,
             "jtd-derive does not support empty cstruct-like structs",
         )),
+        Fields::Named(fields) if s.fields.len() == 1 && ctx.transparent => {
+            let ty = &fields.named[0].ty;
 
-        Fields::Named(fields) => Ok(gen_named_fields(&fields, !ctx.deny_unknown_fields)),
+            Ok(parse_quote! {
+                gen.sub_schema::<#ty>()
+            })
+        }
+        Fields::Named(fields) => {
+            if ctx.transparent {
+                Err(syn::Error::new_spanned(
+                    ident,
+                    "#[typedef(transparent)] requires struct to have exactly one field",
+                ))
+                //}
+            } else {
+                Ok(gen_named_fields(&fields, !ctx.deny_unknown_fields))
+            }
+        }
         Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
             let ty = &fields.unnamed[0].ty;
 
@@ -95,6 +111,13 @@ fn gen_enum_schema(
     ident: &Ident,
     enu: DataEnum,
 ) -> Result<TokenStream, syn::Error> {
+    if ctx.transparent {
+        return Err(syn::Error::new_spanned(
+            ident,
+            "#[typedef(transparent)] is not allowed on an enum",
+        ));
+    }
+
     match enum_kind(ident, &enu)? {
         EnumKind::UnitVariants => {
             let idents = enu.variants.iter().map(|v| &v.ident);
