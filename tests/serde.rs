@@ -152,3 +152,92 @@ fn default() {
         }}
     );
 }
+
+#[derive(JsonTypedef, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
+struct RenameStruct {
+    foo_bar: bool,
+}
+
+#[derive(JsonTypedef, Deserialize)]
+#[serde(rename_all(deserialize = "camelCase"))]
+#[allow(dead_code)]
+struct RenameStruct2 {
+    foo_bar: bool,
+}
+
+#[test]
+fn rename_all() {
+    assert_eq!(
+        serde_json::to_value(Generator::default().into_root_schema::<RenameStruct>()).unwrap(),
+        serde_json::json! {{
+            "properties": {
+                "fooBar": { "type": "boolean" }
+            },
+            "additionalProperties": true,
+        }}
+    );
+    assert_eq!(
+        serde_json::to_value(Generator::default().into_root_schema::<RenameStruct>()).unwrap(),
+        serde_json::to_value(Generator::default().into_root_schema::<RenameStruct2>()).unwrap(),
+    );
+}
+
+#[derive(JsonTypedef, Deserialize)]
+#[serde(rename_all(serialize = "camelCase"))]
+#[allow(dead_code)]
+struct RenameStructSerialize {
+    foo_bar: bool,
+}
+
+#[test]
+fn rename_all_serialize_gets_ignored() {
+    assert_eq!(
+        serde_json::to_value(Generator::default().into_root_schema::<RenameStructSerialize>())
+            .unwrap(),
+        serde_json::json! {{
+            "properties": {
+                "foo_bar": { "type": "boolean" }
+            },
+            "additionalProperties": true,
+        }}
+    );
+}
+
+#[derive(JsonTypedef)]
+#[typedef(rename_all = "SCREAMING-KEBAB-CASE")]
+#[allow(dead_code)]
+struct RenameStruct3 {
+    foo_bar: bool,
+}
+
+#[test]
+fn rename_all_typedef_attr() {
+    assert_eq!(
+        serde_json::to_value(Generator::default().into_root_schema::<RenameStruct3>()).unwrap(),
+        serde_json::json! {{
+            "properties": {
+                "FOO-BAR": { "type": "boolean" }
+            },
+            "additionalProperties": true,
+        }}
+    );
+}
+
+#[derive(JsonTypedef)]
+#[typedef(rename_all = "SCREAMING-KEBAB-CASE")]
+#[allow(dead_code)]
+enum RenameEnum {
+    FooBar,
+}
+
+#[test]
+fn rename_all_enum() {
+    assert_eq!(
+        serde_json::to_value(Generator::default().into_root_schema::<RenameEnum>()).unwrap(),
+        serde_json::json! {{
+            "enum": ["FOO-BAR"],
+        }}
+    );
+}

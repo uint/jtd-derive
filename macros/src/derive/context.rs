@@ -1,10 +1,12 @@
 use itertools::{Either, Itertools as _};
+use sdi::attr::RenameRule;
 use serde_derive_internals as sdi;
-use syn::{Attribute, DeriveInput, Lit, Meta, NestedMeta, Type};
+use syn::{Attribute, DeriveInput, Lit, Meta, MetaNameValue, NestedMeta, Type};
 
 const ATTR_IDENT: &str = "typedef";
+const SERDE_ATTR_IDENT: &str = "serde";
 
-#[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[derive(Default)]
 pub struct Container {
     pub no_serde: bool,
     pub tag_type: TagType,
@@ -13,6 +15,7 @@ pub struct Container {
     pub type_from: Option<Type>,
     pub type_try_from: Option<Type>,
     pub default: bool,
+    pub rename_rule: Option<RenameRule>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -68,37 +71,9 @@ impl Container {
         cont.type_from = serde.type_from().cloned();
         cont.type_try_from = serde.type_try_from().cloned();
         cont.default = !matches!(serde.default(), sdi::attr::Default::None);
+        cont.rename_rule = parse_rename_rule(collect_attrs(input, SERDE_ATTR_IDENT)?);
 
-        let typedef_attrs = input.attrs.iter().filter(|attr| {
-            attr.path
-                .get_ident()
-                .map(|ident| *ident == ATTR_IDENT)
-                .unwrap_or(false)
-        });
-
-        fn parse_attr(attr: &Attribute) -> Result<Vec<Meta>, syn::Error> {
-            let meta = attr.parse_meta()?;
-            if let Meta::List(l) = meta {
-                let inner_metas = collect_fallible(l.nested.into_iter().map(|n| {
-                    if let NestedMeta::Meta(m) = n {
-                        Ok(m)
-                    } else {
-                        Err(syn::Error::new_spanned(n, "literals are not allowed here"))
-                    }
-                }))?;
-
-                Ok(inner_metas)
-            } else {
-                Err(syn::Error::new_spanned(
-                    meta,
-                    "typedef attributes are expected to take this form: #[typedef(...)]",
-                ))
-            }
-        }
-
-        let params = collect_fallible(typedef_attrs.map(parse_attr))?
-            .into_iter()
-            .flatten();
+        let params = collect_attrs(input, ATTR_IDENT)?;
         collect_fallible(params.map(|p| {
             match p
                 .path()
@@ -176,6 +151,23 @@ impl Container {
                         ))
                     }
                 }
+                "rename_all" => {
+                    if let Meta::NameValue(v) = p {
+                        if let Lit::Str(s) = &v.lit {
+                            let rule = RenameRule::from_str(&s.value())
+                                .map_err(|e| syn::Error::new_spanned(v.lit, e))?;
+                            cont.rename_rule = Some(rule);
+                            Ok(())
+                        } else {
+                            Err(syn::Error::new_spanned(v.lit, "expected a string literal"))
+                        }
+                    } else {
+                        Err(syn::Error::new_spanned(
+                            p,
+                            "expected something like `rename_all = \"FromType\"`",
+                        ))
+                    }
+                }
                 "default" => {
                     if let Meta::Path(_) = p {
                         cont.default = true;
@@ -196,4 +188,91 @@ impl Container {
 
         Ok(cont)
     }
+}
+
+fn collect_attrs(
+    input: &DeriveInput,
+    path: &str,
+) -> Result<impl Iterator<Item = Meta>, syn::Error> {
+    let attrs = input.attrs.iter().filter(|attr| {
+        attr.path
+            .get_ident()
+            .map(|ident| *ident == path)
+            .unwrap_or(false)
+    });
+
+    let parse_attr = |attr: &Attribute| -> Result<Vec<Meta>, syn::Error> {
+        let meta = attr.parse_meta()?;
+        if let Meta::List(l) = meta {
+            let inner_metas = collect_fallible(l.nested.into_iter().map(|n| {
+                if let NestedMeta::Meta(m) = n {
+                    Ok(m)
+                } else {
+                    Err(syn::Error::new_spanned(n, "literals are not allowed here"))
+                }
+            }))?;
+
+            Ok(inner_metas)
+        } else {
+            Err(syn::Error::new_spanned(
+                meta,
+                format!(
+                    "{0} attributes are expected to take this form: #[{0}(...)]",
+                    path
+                ),
+            ))
+        }
+    };
+
+    Ok(collect_fallible(attrs.map(parse_attr))?
+        .into_iter()
+        .flatten())
+}
+
+fn parse_rename_rule(args: impl Iterator<Item = Meta>) -> Option<RenameRule> {
+    let rename_all_args = args.filter(|meta| {
+        meta.path()
+            .get_ident()
+            .map(|id| id.to_string().as_str() == "rename_all")
+            .unwrap_or_default()
+    });
+
+    rename_all_args
+        .filter_map(|meta| -> Option<RenameRule> {
+            match meta {
+                Meta::Path(_) => None,
+                Meta::List(l) => l
+                    .nested
+                    .iter()
+                    .filter_map(|nested| {
+                        if let NestedMeta::Meta(Meta::NameValue(name_value)) = nested {
+                            if !name_value
+                                .path
+                                .get_ident()
+                                .map(|id| id.to_string().as_str() == "deserialize")
+                                .unwrap_or_default()
+                            {
+                                return None;
+                            }
+
+                            if let Lit::Str(s) = &name_value.lit {
+                                RenameRule::from_str(&s.value()).ok()
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        }
+                    })
+                    .last(),
+                Meta::NameValue(MetaNameValue { lit, .. }) => {
+                    if let Lit::Str(s) = lit {
+                        RenameRule::from_str(&s.value()).ok()
+                    } else {
+                        None
+                    }
+                }
+            }
+        })
+        .last()
 }

@@ -2,6 +2,7 @@ mod context;
 
 use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned};
+use serde_derive_internals::attr::RenameRule;
 use syn::{
     parse_quote, DataEnum, DataStruct, DeriveInput, Fields, FieldsNamed, GenericParam, Generics,
     Ident, ItemImpl,
@@ -131,7 +132,7 @@ fn gen_struct_schema(
                 ))
                 //}
             } else {
-                Ok(gen_named_fields(ctx, &fields))
+                Ok(gen_named_fields(ctx, &fields, ctx.rename_rule))
             }
         }
         Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
@@ -173,12 +174,17 @@ fn gen_enum_schema(
 
     match enum_kind(ident, &enu)? {
         EnumKind::UnitVariants => {
-            let idents = enu.variants.iter().map(|v| &v.ident);
+            let mut idents: Vec<_> = enu.variants.iter().map(|v| v.ident.to_string()).collect();
+            if let Some(rule) = ctx.rename_rule {
+                for ident in idents.iter_mut() {
+                    *ident = rule.apply_to_variant(ident);
+                }
+            }
 
             let enum_schema = parse_quote! {
                 Schema {
                     ty: SchemaType::Enum {
-                        r#enum: [#(stringify!(#idents)),*].into(),
+                        r#enum: [#(#idents),*].into(),
                     },
                     ..::jtd_derive::schema::Schema::default()
                 }
@@ -217,7 +223,7 @@ fn gen_enum_schema(
                 .map(|v| {
                     (
                         &v.ident,
-                        gen_named_fields(ctx, unwrap_fields_named(&v.fields)),
+                        gen_named_fields(ctx, unwrap_fields_named(&v.fields), None),
                     )
                 })
                 .unzip();
@@ -235,9 +241,24 @@ fn gen_enum_schema(
     }
 }
 
-fn gen_named_fields(ctx: &Container, fields: &FieldsNamed) -> TokenStream {
-    let (idents, types): (Vec<_>, Vec<_>) = fields.named.iter().map(|f| (&f.ident, &f.ty)).unzip();
-    let expanded_fields = quote! {#((stringify!(#idents), gen.sub_schema::<#types>())),*};
+fn gen_named_fields(
+    ctx: &Container,
+    fields: &FieldsNamed,
+    rename_rule: Option<RenameRule>,
+) -> TokenStream {
+    let (mut idents, types): (Vec<_>, Vec<_>) = fields
+        .named
+        .iter()
+        .map(|f| (f.ident.as_ref().map(|i| i.to_string()).unwrap(), &f.ty))
+        .unzip();
+
+    if let Some(rule) = rename_rule {
+        for ident in idents.iter_mut() {
+            *ident = rule.apply_to_field(&ident.to_string());
+        }
+    }
+
+    let expanded_fields = quote! {#((#idents, gen.sub_schema::<#types>())),*};
 
     let additional = !ctx.deny_unknown_fields;
 
