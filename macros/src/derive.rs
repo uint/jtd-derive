@@ -131,7 +131,7 @@ fn gen_struct_schema(
                 ))
                 //}
             } else {
-                Ok(gen_named_fields(&fields, !ctx.deny_unknown_fields))
+                Ok(gen_named_fields(ctx, &fields))
             }
         }
         Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
@@ -161,6 +161,13 @@ fn gen_enum_schema(
         return Err(syn::Error::new_spanned(
             ident,
             "#[typedef(transparent)] is not allowed on an enum",
+        ));
+    }
+
+    if ctx.default {
+        return Err(syn::Error::new_spanned(
+            ident,
+            "#[typedef(default)] is not allowed on an enum",
         ));
     }
 
@@ -210,7 +217,7 @@ fn gen_enum_schema(
                 .map(|v| {
                     (
                         &v.ident,
-                        gen_named_fields(unwrap_fields_named(&v.fields), !ctx.deny_unknown_fields),
+                        gen_named_fields(ctx, unwrap_fields_named(&v.fields)),
                     )
                 })
                 .unzip();
@@ -228,14 +235,23 @@ fn gen_enum_schema(
     }
 }
 
-fn gen_named_fields(fields: &FieldsNamed, additional: bool) -> TokenStream {
+fn gen_named_fields(ctx: &Container, fields: &FieldsNamed) -> TokenStream {
     let (idents, types): (Vec<_>, Vec<_>) = fields.named.iter().map(|f| (&f.ident, &f.ty)).unzip();
+    let expanded_fields = quote! {#((stringify!(#idents), gen.sub_schema::<#types>())),*};
+
+    let additional = !ctx.deny_unknown_fields;
+
+    let (prop, optional) = if ctx.default {
+        (quote! {[].into()}, quote! {[#expanded_fields].into()})
+    } else {
+        (quote! {[#expanded_fields].into()}, quote! {[].into()})
+    };
 
     parse_quote! {
         Schema {
             ty: SchemaType::Properties {
-                properties: [#((stringify!(#idents), gen.sub_schema::<#types>())),*].into(),
-                optional_properties: [].into(),
+                properties: #prop,
+                optional_properties: #optional,
                 additional_properties: #additional,
             },
             ..::jtd_derive::schema::Schema::default()

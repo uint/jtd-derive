@@ -12,6 +12,7 @@ pub struct Container {
     pub transparent: bool,
     pub type_from: Option<Type>,
     pub type_try_from: Option<Type>,
+    pub default: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -66,6 +67,7 @@ impl Container {
         cont.transparent = serde.transparent();
         cont.type_from = serde.type_from().cloned();
         cont.type_try_from = serde.type_try_from().cloned();
+        cont.default = !matches!(serde.default(), sdi::attr::Default::None);
 
         let typedef_attrs = input.attrs.iter().filter(|attr| {
             attr.path
@@ -171,6 +173,17 @@ impl Container {
                         Err(syn::Error::new_spanned(
                             p,
                             "expected something like `try_from = \"FromType\"`",
+                        ))
+                    }
+                }
+                "default" => {
+                    if let Meta::Path(_) = p {
+                        cont.default = true;
+                        Ok(())
+                    } else {
+                        Err(syn::Error::new_spanned(
+                            p,
+                            "the `default` parameter takes no value",
                         ))
                     }
                 }

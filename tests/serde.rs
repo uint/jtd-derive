@@ -132,3 +132,23 @@ fn from() {
         serde_json::json! {{ "type": "uint32" }}
     );
 }
+
+#[derive(Default, JsonTypedef, Deserialize)]
+#[serde(default)]
+#[allow(dead_code)]
+struct FromDefault {
+    x: bool,
+}
+
+#[test]
+fn default() {
+    assert_eq!(
+        serde_json::to_value(Generator::default().into_root_schema::<FromDefault>()).unwrap(),
+        serde_json::json! {{
+            "optionalProperties": {
+                "x": { "type": "boolean" }
+            },
+            "additionalProperties": true,
+        }}
+    );
+}
