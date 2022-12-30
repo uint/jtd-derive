@@ -14,8 +14,8 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
 
     let ident = input.ident;
 
-    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
-    let mut impl_generics: Generics = parse_quote! {#impl_generics};
+    let (impl_generics_no_infer, ty_generics, where_clause) = input.generics.split_for_impl();
+    let mut impl_generics: Generics = parse_quote! {#impl_generics_no_infer};
     for param in impl_generics.params.iter_mut() {
         if let GenericParam::Type(ty) = param {
             // We add the `JsonTypedef` bound to every type parameter.
@@ -43,7 +43,7 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
         (None, None) => {}
         (Some(ty), None) => {
             return Ok(parse_quote! {
-                impl #impl_generics ::jtd_derive::JsonTypedef for #ident #ty_generics #where_clause {
+                impl #impl_generics_no_infer ::jtd_derive::JsonTypedef for #ident #ty_generics #where_clause {
                     fn schema(gen: &mut ::jtd_derive::gen::Generator) -> ::jtd_derive::schema::Schema {
                         <#ty as ::jtd_derive::JsonTypedef>::schema(gen)
                     }
@@ -60,7 +60,7 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
         }
         (None, Some(ty)) => {
             return Ok(parse_quote! {
-                impl #impl_generics ::jtd_derive::JsonTypedef for #ident #ty_generics #where_clause {
+                impl #impl_generics_no_infer ::jtd_derive::JsonTypedef for #ident #ty_generics #where_clause {
                     fn schema(gen: &mut ::jtd_derive::gen::Generator) -> ::jtd_derive::schema::Schema {
                         <#ty as ::jtd_derive::JsonTypedef>::schema(gen)
                     }
