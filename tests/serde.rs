@@ -241,3 +241,28 @@ fn rename_all_enum() {
         }}
     );
 }
+
+#[derive(JsonTypedef)]
+#[typedef(rename_all = "SCREAMING-KEBAB-CASE", tag = "type")]
+#[allow(dead_code)]
+enum RenameEnum2 {
+    FooBar { x: u32 },
+}
+
+#[test]
+fn rename_all_enum_struct_variants() {
+    assert_eq!(
+        serde_json::to_value(Generator::default().into_root_schema::<RenameEnum2>()).unwrap(),
+        serde_json::json! {{
+            "discriminator": "type",
+            "mapping": {
+                "FOO-BAR": {
+                    "properties": {
+                        "x": { "type": "uint32" }
+                    },
+                    "additionalProperties": true,
+                }
+            }
+        }}
+    );
+}

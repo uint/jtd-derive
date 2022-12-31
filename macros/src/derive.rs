@@ -217,22 +217,27 @@ fn gen_enum_schema(
                 context::TagType::Internal(t) => t,
             };
 
-            let (idents, variants): (Vec<_>, Vec<_>) = enu
+            let (mut idents, variants): (Vec<_>, Vec<_>) = enu
                 .variants
                 .iter()
                 .map(|v| {
                     (
-                        &v.ident,
+                        v.ident.to_string(),
                         gen_named_fields(ctx, unwrap_fields_named(&v.fields), None),
                     )
                 })
                 .unzip();
+            if let Some(rule) = ctx.rename_rule {
+                for ident in idents.iter_mut() {
+                    *ident = rule.apply_to_variant(ident);
+                }
+            }
 
             Ok(parse_quote! {
                 Schema {
                     ty: SchemaType::Discriminator {
                         discriminator: #tag,
-                        mapping: [#((stringify!(#idents), #variants)),*].into(),
+                        mapping: [#((#idents, #variants)),*].into(),
                     },
                     ..::jtd_derive::schema::Schema::default()
                 }
