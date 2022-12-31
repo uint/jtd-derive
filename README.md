@@ -43,23 +43,6 @@ Schemas as well, consider using _Typedef_ and writing a `Typedef -> JSON Schema`
 generator. That way codegen consumers can still benefit from _Typedef_'s
 simplicity.
 
-## OpenAPI
-
-`OpenAPI` serves a similar purpose, but is complex and meant to describe
-specifically APIs built on top of HTTP (often called "RESTful APIs", though
-[that's usually quite silly](https://medium.com/@andrea.chiarelli/please-dont-call-them-restful-d2465527b5c)),
-with its paths and methods and all the doodads. In that way, it already has a
-way of describing your API's endpoints, whereas if you want to use _Typedef_,
-you'll want to embed it in some custom
-[IDL](https://en.wikipedia.org/wiki/Interface_description_language) of your
-design.
-
-If you're building a "web" api, `OpenAPI` might be worth a look. It seems
-complex, but maybe it will make sense for your use case.
-
-If you're not building a "web" API and aren't constrained by the HTTP
-vocabulary, you'll probably get more value out of _Typedef_.
-
 # Types supported by `serde`, but not by `jtd_derive`
 
 - unit structs like `struct Foo;`
