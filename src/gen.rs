@@ -3,10 +3,9 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 
-use crate::{
-    schema::{Names, RootSchema, Schema, SchemaType},
-    JsonTypedef,
-};
+use crate::schema::{Names, RootSchema, Schema, SchemaType};
+use crate::type_id::{type_id, TypeId};
+use crate::JsonTypedef;
 
 /// A configurable schema generator. An instance is meant to produce one
 /// [`RootSchema`] and be consumed in the process.
@@ -71,13 +70,15 @@ use crate::{
 #[derive(Default, Debug)]
 pub struct Generator {
     naming_strategy: NamingStrategy,
-    refs: HashSet<Names>,
-    definitions: HashMap<Names, DefinitionState>,
+    /// Types for which at least one ref was created during schema gen.
+    /// By keeping track of these, we can clean up unused definitions at the end.
+    refs: HashSet<TypeId>,
+    definitions: HashMap<TypeId, (Names, DefinitionState)>,
     inlining: Inlining,
 }
 
 impl Generator {
-    /// Provide a builder
+    /// Provide a `Generator` builder, allowing for some customization.
     pub fn builder() -> GeneratorBuilder {
         GeneratorBuilder::default()
     }
@@ -86,12 +87,13 @@ impl Generator {
     /// This consumes the generator.
     pub fn into_root_schema<T: JsonTypedef>(mut self) -> RootSchema {
         let schema = self.sub_schema_impl::<T>(true);
+        println!("{:#?}", self.definitions);
         self.clean_up_defs();
 
         let definitions = self
             .definitions
             .into_iter()
-            .map(|(n, s)| (self.naming_strategy.fun()(&n), s.unwrap()))
+            .map(|(_, (n, s))| (self.naming_strategy.fun()(&n), s.unwrap()))
             .collect();
 
         RootSchema {
@@ -106,27 +108,27 @@ impl Generator {
     /// This is meant to only be called when implementing [`JsonTypedef`] for
     /// new types. Most commonly you'll derive that trait. It's unlikely you'll
     /// need to call this method explicitly.
-    pub fn sub_schema<T: JsonTypedef>(&mut self) -> Schema {
+    pub fn sub_schema<T: JsonTypedef + ?Sized>(&mut self) -> Schema {
         self.sub_schema_impl::<T>(false)
     }
 
-    fn sub_schema_impl<T: JsonTypedef>(&mut self, top_level: bool) -> Schema {
-        let names = T::names();
+    fn sub_schema_impl<T: JsonTypedef + ?Sized>(&mut self, top_level: bool) -> Schema {
+        let id = type_id::<T>();
         let inlining = match self.inlining {
             Inlining::Always => true,
             Inlining::Normal => top_level,
             Inlining::Never => false,
         };
 
-        let inlined_schema = match self.definitions.get(&names) {
-            Some(DefinitionState::Finished(schema)) => {
+        let inlined_schema = match self.definitions.get(&id) {
+            Some((_, DefinitionState::Finished(schema))) => {
                 // we had already built a schema for this type.
                 // no need to do it again.
 
-                (!T::referenceable() || (inlining && !self.refs.contains(&names)))
+                (!T::referenceable() || (inlining && !self.refs.contains(&id)))
                     .then_some(schema.clone())
             }
-            Some(DefinitionState::Processing) => {
+            Some((_, DefinitionState::Processing)) => {
                 // we're already in the process of building a schema for this type.
                 // this means it's recursive and the only way to keep things sane
                 // is to go by reference
@@ -137,14 +139,15 @@ impl Generator {
                 // no schema available yet, so we have to build it
                 if T::referenceable() {
                     self.definitions
-                        .insert(names.clone(), DefinitionState::Processing);
+                        .insert(id, (T::names(), DefinitionState::Processing));
                     let schema = T::schema(self);
                     self.definitions
-                        .get_mut(&names)
+                        .get_mut(&id)
                         .unwrap()
+                        .1
                         .finalize(schema.clone());
 
-                    (inlining && !self.refs.contains(&names)).then_some(schema)
+                    (inlining && !self.refs.contains(&id)).then_some(schema)
                 } else {
                     Some(T::schema(self))
                 }
@@ -154,11 +157,11 @@ impl Generator {
         inlined_schema.unwrap_or_else(|| {
             let schema = Schema {
                 ty: SchemaType::Ref {
-                    r#ref: self.naming_strategy.fun()(&names),
+                    r#ref: self.naming_strategy.fun()(&T::names()),
                 },
                 ..Schema::default()
             };
-            self.refs.insert(names);
+            self.refs.insert(id);
             schema
         })
     }

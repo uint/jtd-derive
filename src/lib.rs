@@ -35,5 +35,6 @@
 pub mod gen;
 pub mod schema;
 mod r#trait;
+mod type_id;
 
 pub use r#trait::JsonTypedef;

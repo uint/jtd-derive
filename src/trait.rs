@@ -135,11 +135,11 @@ impl_wrappers! {
 
 impl JsonTypedef for std::path::PathBuf {
     fn schema(gen: &mut Generator) -> Schema {
-        std::path::Path::schema(gen)
+        gen.sub_schema::<std::path::Path>()
     }
 
     fn referenceable() -> bool {
-        std::path::Path::referenceable()
+        false
     }
 
     fn names() -> Names {
@@ -269,11 +269,11 @@ macro_rules! impl_transparent {
 		$(
             impl<T: JsonTypedef> JsonTypedef for $in {
                 fn schema(gen: &mut Generator) -> Schema {
-                    T::schema(gen)
+                    gen.sub_schema::<T>()
                 }
 
                 fn referenceable() -> bool {
-                    T::referenceable()
+                    false
                 }
 
                 fn names() -> Names {
@@ -299,11 +299,11 @@ macro_rules! impl_transparent_lifetime {
 		$(
             impl<'a, T: JsonTypedef + ?Sized> JsonTypedef for $in {
                 fn schema(gen: &mut Generator) -> Schema {
-                    T::schema(gen)
+                    gen.sub_schema::<T>()
                 }
 
                 fn referenceable() -> bool {
-                    T::referenceable()
+                    false
                 }
 
                 fn names() -> Names {
@@ -318,11 +318,11 @@ impl_transparent_lifetime!(&'a T, &'a mut T);
 
 impl<'a, T: JsonTypedef + Clone> JsonTypedef for Cow<'a, T> {
     fn schema(gen: &mut Generator) -> Schema {
-        T::schema(gen)
+        gen.sub_schema::<T>()
     }
 
     fn referenceable() -> bool {
-        T::referenceable()
+        false
     }
 
     fn names() -> Names {
