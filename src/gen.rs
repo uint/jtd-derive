@@ -193,6 +193,7 @@ impl Default for Inlining {
     }
 }
 
+/// Builder for [`Generator`]. For example usage, refer to [`Generator`].
 #[derive(Default, Debug)]
 pub struct GeneratorBuilder {
     inlining: Inlining,
@@ -296,6 +297,23 @@ impl NamingStrategy {
         Self(Box::new(strategy))
     }
 
+    /// A naming strategy that produces the stringified name
+    /// of the type with type parameters and const parameters in angle brackets.
+    ///
+    /// E.g. if you have a struct like this in the top-level of `my_crate`:
+    ///
+    /// ```
+    /// #[derive(jtd_derive::JsonTypedef)]
+    /// struct Foo<T, const N: usize> {
+    ///     x: [T; N],
+    /// }
+    /// ```
+    ///
+    /// Then the concrete type `Foo<u32, 5>` will be named `"Foo<uint32, 5>"`
+    /// in the schema.
+    ///
+    /// Please note that this representation is prone to name collisions if you
+    /// use identically named types in different modules or crates.
     pub fn short() -> Self {
         fn strategy(names: &Names) -> String {
             let params = names
@@ -319,7 +337,7 @@ impl NamingStrategy {
         Self(Box::new(fun))
     }
 
-    pub fn fun(&self) -> &dyn Fn(&Names) -> String {
+    fn fun(&self) -> &dyn Fn(&Names) -> String {
         &self.0
     }
 }
