@@ -1,4 +1,4 @@
-use jtd_derive::{gen::Generator, JsonTypedef};
+use jtd_derive::{Generator, JsonTypedef};
 use serde::Deserialize;
 
 #[derive(JsonTypedef, Deserialize)]

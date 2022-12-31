@@ -14,7 +14,7 @@
 //! # Example
 //!
 //! ```
-//! use jtd_derive::{JsonTypedef, gen::Generator};
+//! use jtd_derive::{JsonTypedef, Generator};
 //!
 //! #[derive(JsonTypedef)]
 //! struct Foo {
@@ -37,4 +37,5 @@ pub mod schema;
 mod r#trait;
 mod type_id;
 
+pub use gen::Generator;
 pub use r#trait::JsonTypedef;

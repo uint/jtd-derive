@@ -1,8 +1,11 @@
 //! Schema generator and its settings.
 
+mod naming_strategy;
+
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 
+use self::naming_strategy::NamingStrategy;
 use crate::schema::{Names, RootSchema, Schema, SchemaType};
 use crate::type_id::{type_id, TypeId};
 use crate::JsonTypedef;
@@ -19,7 +22,7 @@ use crate::JsonTypedef;
 /// Using the default settings:
 ///
 /// ```
-/// use jtd_derive::{JsonTypedef, gen::Generator};
+/// use jtd_derive::{JsonTypedef, Generator};
 ///
 /// #[derive(JsonTypedef)]
 /// struct Foo {
@@ -40,8 +43,7 @@ use crate::JsonTypedef;
 /// Using custom settings:
 ///
 /// ```
-/// use jtd_derive::JsonTypedef;
-/// use jtd_derive::gen::{Generator, NamingStrategy};
+/// use jtd_derive::{JsonTypedef, Generator};
 ///
 /// #[derive(JsonTypedef)]
 /// struct Foo {
@@ -50,7 +52,7 @@ use crate::JsonTypedef;
 ///
 /// let root_schema = Generator::builder()
 ///     .top_level_ref()
-///     .naming_strategy(NamingStrategy::short())
+///     .naming_short()
 ///     .build()
 ///     .into_root_schema::<Foo>();
 /// let json_schema = serde_json::to_value(&root_schema).unwrap();
@@ -215,9 +217,56 @@ impl GeneratorBuilder {
         self
     }
 
-    /// Use a different naming strategy.
-    pub fn naming_strategy(&mut self, strat: NamingStrategy) -> &mut Self {
-        self.naming_strategy = Some(strat);
+    /// A naming strategy that produces the stringified name
+    /// of the type with type parameters and const parameters in angle brackets.
+    ///
+    /// E.g. if you have a struct like this in the top-level of `my_crate`:
+    ///
+    /// ```
+    /// #[derive(jtd_derive::JsonTypedef)]
+    /// struct Foo<T, const N: usize> {
+    ///     x: [T; N],
+    /// }
+    /// ```
+    ///
+    /// Then the concrete type `Foo<u32, 5>` will be named `"Foo<uint32, 5>"`
+    /// in the schema.
+    ///
+    /// Please note that this representation is prone to name collisions if you
+    /// use identically named types in different modules or crates.
+    pub fn naming_short(&mut self) -> &mut Self {
+        self.naming_strategy = Some(NamingStrategy::short());
+        self
+    }
+
+    /// Use the `long` naming strategy. This is the default.
+    ///
+    /// The `long` naming strategy produces the stringified full path
+    /// of the type with type parameters and const parameters in angle brackets.
+    ///
+    /// E.g. if you have a struct like this in the top-level of `my_crate`:
+    ///
+    /// ```
+    /// #[derive(jtd_derive::JsonTypedef)]
+    /// struct Foo<T, const N: usize> {
+    ///     x: [T; N],
+    /// }
+    /// ```
+    ///
+    /// Then the concrete type `Foo<u32, 5>` will be named `"my_crate::Foo<uint32, 5>"`
+    /// in the schema.
+    ///
+    /// This representation will prevent name collisions under normal circumstances,
+    /// but it's technically possible some type will manually implement `names()`
+    /// in a weird way.
+    pub fn naming_long(&mut self) -> &mut Self {
+        self.naming_strategy = Some(NamingStrategy::long());
+        self
+    }
+
+    /// Use a custom naming strategy.
+    pub fn naming_custom(&mut self, f: impl Fn(&Names) -> String + 'static) -> &mut Self {
+        self.naming_strategy = Some(NamingStrategy::custom(f));
         self
     }
 
@@ -257,111 +306,5 @@ impl DefinitionState {
 impl Default for DefinitionState {
     fn default() -> Self {
         Self::Processing
-    }
-}
-
-/// The naming strategy. The strategy decides how types are named in definitions/refs
-/// in the _Typedef_ schema.
-pub struct NamingStrategy(Box<dyn Fn(&Names) -> String>);
-
-impl NamingStrategy {
-    /// A naming strategy that produces the stringified full path
-    /// of the type with type parameters and const parameters in angle brackets.
-    ///
-    /// E.g. if you have a struct like this in the top-level of `my_crate`:
-    ///
-    /// ```
-    /// #[derive(jtd_derive::JsonTypedef)]
-    /// struct Foo<T, const N: usize> {
-    ///     x: [T; N],
-    /// }
-    /// ```
-    ///
-    /// Then the concrete type `Foo<u32, 5>` will be named `"my_crate::Foo<uint32, 5>"`
-    /// in the schema.
-    pub fn long() -> Self {
-        fn strategy(names: &Names) -> String {
-            let params = names
-                .type_params
-                .iter()
-                .map(strategy)
-                .chain(names.const_params.clone())
-                .reduce(|l, r| format!("{}, {}", l, r));
-
-            match params {
-                Some(params) => format!("{}<{}>", names.long, params),
-                None => names.long.to_string(),
-            }
-        }
-
-        Self(Box::new(strategy))
-    }
-
-    /// A naming strategy that produces the stringified name
-    /// of the type with type parameters and const parameters in angle brackets.
-    ///
-    /// E.g. if you have a struct like this in the top-level of `my_crate`:
-    ///
-    /// ```
-    /// #[derive(jtd_derive::JsonTypedef)]
-    /// struct Foo<T, const N: usize> {
-    ///     x: [T; N],
-    /// }
-    /// ```
-    ///
-    /// Then the concrete type `Foo<u32, 5>` will be named `"Foo<uint32, 5>"`
-    /// in the schema.
-    ///
-    /// Please note that this representation is prone to name collisions if you
-    /// use identically named types in different modules or crates.
-    pub fn short() -> Self {
-        fn strategy(names: &Names) -> String {
-            let params = names
-                .type_params
-                .iter()
-                .map(strategy)
-                .chain(names.const_params.clone())
-                .reduce(|l, r| format!("{}, {}", l, r));
-
-            match params {
-                Some(params) => format!("{}<{}>", names.short, params),
-                None => names.short.to_string(),
-            }
-        }
-
-        Self(Box::new(strategy))
-    }
-
-    /// A custom naming strategy.
-    pub fn custom<F: Fn(&Names) -> String + 'static>(fun: F) -> Self {
-        Self(Box::new(fun))
-    }
-
-    fn fun(&self) -> &dyn Fn(&Names) -> String {
-        &self.0
-    }
-}
-
-impl Default for NamingStrategy {
-    fn default() -> Self {
-        Self::long()
-    }
-}
-
-impl Debug for NamingStrategy {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let example = Names {
-            short: "Foo",
-            long: "my_crate::Foo",
-            nullable: false,
-            type_params: vec![u32::names()],
-            const_params: vec!["5".to_string()],
-        };
-        let result = self.fun()(&example);
-
-        f.write_fmt(format_args!(
-            "NamingStrategy(Foo<u32, 5> -> \"{}\")",
-            result
-        ))
     }
 }
