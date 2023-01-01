@@ -6,8 +6,8 @@ use std::fmt::Arguments;
 use std::ops::{Range, RangeInclusive};
 use std::sync::{atomic, Mutex, RwLock};
 
-use crate::gen::Generator;
-use crate::schema::{Names, Schema, SchemaType, TypeSchema};
+use crate::schema::{Schema, SchemaType, TypeSchema};
+use crate::{Generator, Names};
 
 pub use jtd_derive_macros::JsonTypedef;
 

@@ -1,5 +1,5 @@
-use super::Names;
 use crate::JsonTypedef as _;
+use crate::Names;
 
 /// The naming strategy. The strategy decides how types are named in definitions/refs
 /// in the _Typedef_ schema.

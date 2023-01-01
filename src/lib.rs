@@ -32,10 +32,12 @@
 //! } });
 //! ```
 
-pub mod gen;
+mod gen;
+mod names;
 pub mod schema;
 mod r#trait;
 mod type_id;
 
 pub use gen::Generator;
+pub use names::Names;
 pub use r#trait::JsonTypedef;

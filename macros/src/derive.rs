@@ -29,8 +29,8 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
     let const_params = input.generics.const_params().map(|p| &p.ident);
 
     let names_impl = quote! {
-        fn names() -> ::jtd_derive::schema::Names {
-            ::jtd_derive::schema::Names {
+        fn names() -> ::jtd_derive::Names {
+            ::jtd_derive::Names {
                 short: stringify!(#ident),
                 long: concat!(module_path!(), "::", stringify!(#ident)),
                 nullable: false,
@@ -45,7 +45,7 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
         (Some(ty), None) => {
             return Ok(parse_quote! {
                 impl #impl_generics_no_infer ::jtd_derive::JsonTypedef for #ident #ty_generics #where_clause {
-                    fn schema(gen: &mut ::jtd_derive::gen::Generator) -> ::jtd_derive::schema::Schema {
+                    fn schema(gen: &mut ::jtd_derive::Generator) -> ::jtd_derive::schema::Schema {
                         <#ty as ::jtd_derive::JsonTypedef>::schema(gen)
                     }
 
@@ -53,7 +53,7 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
                         <#ty as ::jtd_derive::JsonTypedef>::referenceable()
                     }
 
-                    fn names() -> ::jtd_derive::schema::Names {
+                    fn names() -> ::jtd_derive::Names {
                         <#ty as ::jtd_derive::JsonTypedef>::names()
                     }
                 }
@@ -62,7 +62,7 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
         (None, Some(ty)) => {
             return Ok(parse_quote! {
                 impl #impl_generics_no_infer ::jtd_derive::JsonTypedef for #ident #ty_generics #where_clause {
-                    fn schema(gen: &mut ::jtd_derive::gen::Generator) -> ::jtd_derive::schema::Schema {
+                    fn schema(gen: &mut ::jtd_derive::Generator) -> ::jtd_derive::schema::Schema {
                         <#ty as ::jtd_derive::JsonTypedef>::schema(gen)
                     }
 
@@ -92,7 +92,7 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
 
     Ok(parse_quote! {
         impl #impl_generics ::jtd_derive::JsonTypedef for #ident #ty_generics #where_clause {
-            fn schema(gen: &mut ::jtd_derive::gen::Generator) -> ::jtd_derive::schema::Schema {
+            fn schema(gen: &mut ::jtd_derive::Generator) -> ::jtd_derive::schema::Schema {
                 use ::jtd_derive::JsonTypedef;
                 use ::jtd_derive::schema::{Schema, SchemaType};
                 #res

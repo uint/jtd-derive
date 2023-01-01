@@ -6,9 +6,9 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 
 use self::naming_strategy::NamingStrategy;
-use crate::schema::{Names, RootSchema, Schema, SchemaType};
+use crate::schema::{RootSchema, Schema, SchemaType};
 use crate::type_id::{type_id, TypeId};
-use crate::JsonTypedef;
+use crate::{JsonTypedef, Names};
 
 /// A configurable schema generator. An instance is meant to produce one
 /// [`RootSchema`] and be consumed in the process.
