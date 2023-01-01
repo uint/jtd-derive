@@ -88,19 +88,45 @@ impl Generator {
 
     /// Generate the root schema for the given type according to the settings.
     /// This consumes the generator.
+    ///
+    /// This will return an error if a naming collision is detected, i.e. two
+    /// distinct Rust types produce the same identifier.
     pub fn into_root_schema<T: JsonTypedef>(mut self) -> Result<RootSchema, GenError> {
         let schema = self.sub_schema_impl::<T>(true);
-        println!("{:#?}", self.definitions);
         self.clean_up_defs();
 
-        let definitions = self
-            .definitions
-            .into_iter()
-            .map(|(_, (n, s))| (self.naming_strategy.fun()(&n), s.unwrap()))
-            .collect();
+        fn process_defs(
+            defs: HashMap<TypeId, (Names, DefinitionState)>,
+            ns: &mut NamingStrategy,
+        ) -> Result<HashMap<String, Schema>, GenError> {
+            // This could probably be optimized somehow.
+
+            let defs = defs
+                .into_iter()
+                .map(|(_, (n, s))| (ns.fun()(&n), (n, s.unwrap())));
+
+            let mut map = HashMap::new();
+
+            for (key, (names, schema)) in defs {
+                if let Some((other_names, _)) = map.get(&key) {
+                    return Err(GenError::NameCollision {
+                        id: key,
+                        type1: NamingStrategy::long().fun()(other_names),
+                        type2: NamingStrategy::long().fun()(&names),
+                    });
+                } else {
+                    map.insert(key, (names, schema));
+                }
+            }
+
+            Ok(map
+                .into_iter()
+                .map(|(key, (_, schema))| (key, schema))
+                .collect())
+        }
 
         Ok(RootSchema {
-            definitions,
+            definitions: process_defs(self.definitions, &mut self.naming_strategy)?,
             schema,
         })
     }
