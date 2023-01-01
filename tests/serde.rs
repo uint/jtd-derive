@@ -12,7 +12,12 @@ enum StructVariants {
 #[test]
 fn enum_respects_serde_tag_attr() {
     assert_eq!(
-        serde_json::to_value(Generator::default().into_root_schema::<StructVariants>()).unwrap(),
+        serde_json::to_value(
+            Generator::default()
+                .into_root_schema::<StructVariants>()
+                .unwrap()
+        )
+        .unwrap(),
         serde_json::json! {{
             "discriminator": "type",
             "mapping": {
@@ -64,7 +69,12 @@ enum DenyEnum2 {
 #[test]
 fn deny_unknown_fields() {
     assert_eq!(
-        serde_json::to_value(Generator::default().into_root_schema::<DenyStruct>()).unwrap(),
+        serde_json::to_value(
+            Generator::default()
+                .into_root_schema::<DenyStruct>()
+                .unwrap()
+        )
+        .unwrap(),
         serde_json::json! {{
             "properties": {
                 "x": { "type": "uint32" }
@@ -73,7 +83,7 @@ fn deny_unknown_fields() {
     );
 
     assert_eq!(
-        serde_json::to_value(Generator::default().into_root_schema::<DenyEnum>()).unwrap(),
+        serde_json::to_value(Generator::default().into_root_schema::<DenyEnum>().unwrap()).unwrap(),
         serde_json::json! {{
             "discriminator": "type",
             "mapping": {
@@ -87,13 +97,28 @@ fn deny_unknown_fields() {
     );
 
     assert_eq!(
-        serde_json::to_value(Generator::default().into_root_schema::<DenyStruct>()).unwrap(),
-        serde_json::to_value(Generator::default().into_root_schema::<DenyStruct2>()).unwrap(),
+        serde_json::to_value(
+            Generator::default()
+                .into_root_schema::<DenyStruct>()
+                .unwrap()
+        )
+        .unwrap(),
+        serde_json::to_value(
+            Generator::default()
+                .into_root_schema::<DenyStruct2>()
+                .unwrap()
+        )
+        .unwrap(),
     );
 
     assert_eq!(
-        serde_json::to_value(Generator::default().into_root_schema::<DenyEnum>()).unwrap(),
-        serde_json::to_value(Generator::default().into_root_schema::<DenyEnum2>()).unwrap(),
+        serde_json::to_value(Generator::default().into_root_schema::<DenyEnum>().unwrap()).unwrap(),
+        serde_json::to_value(
+            Generator::default()
+                .into_root_schema::<DenyEnum2>()
+                .unwrap()
+        )
+        .unwrap(),
     );
 }
 
@@ -107,7 +132,12 @@ struct Transparent {
 #[test]
 fn transparent() {
     assert_eq!(
-        serde_json::to_value(Generator::default().into_root_schema::<Transparent>()).unwrap(),
+        serde_json::to_value(
+            Generator::default()
+                .into_root_schema::<Transparent>()
+                .unwrap()
+        )
+        .unwrap(),
         serde_json::json! {{ "type": "uint32" }}
     );
 }
@@ -128,7 +158,12 @@ impl From<Transparent> for FromStruct {
 #[test]
 fn from() {
     assert_eq!(
-        serde_json::to_value(Generator::default().into_root_schema::<Transparent>()).unwrap(),
+        serde_json::to_value(
+            Generator::default()
+                .into_root_schema::<Transparent>()
+                .unwrap()
+        )
+        .unwrap(),
         serde_json::json! {{ "type": "uint32" }}
     );
 }
@@ -143,7 +178,12 @@ struct FromDefault {
 #[test]
 fn default() {
     assert_eq!(
-        serde_json::to_value(Generator::default().into_root_schema::<FromDefault>()).unwrap(),
+        serde_json::to_value(
+            Generator::default()
+                .into_root_schema::<FromDefault>()
+                .unwrap()
+        )
+        .unwrap(),
         serde_json::json! {{
             "optionalProperties": {
                 "x": { "type": "boolean" }
@@ -170,7 +210,12 @@ struct RenameStruct2 {
 #[test]
 fn rename_all() {
     assert_eq!(
-        serde_json::to_value(Generator::default().into_root_schema::<RenameStruct>()).unwrap(),
+        serde_json::to_value(
+            Generator::default()
+                .into_root_schema::<RenameStruct>()
+                .unwrap()
+        )
+        .unwrap(),
         serde_json::json! {{
             "properties": {
                 "fooBar": { "type": "boolean" }
@@ -179,8 +224,18 @@ fn rename_all() {
         }}
     );
     assert_eq!(
-        serde_json::to_value(Generator::default().into_root_schema::<RenameStruct>()).unwrap(),
-        serde_json::to_value(Generator::default().into_root_schema::<RenameStruct2>()).unwrap(),
+        serde_json::to_value(
+            Generator::default()
+                .into_root_schema::<RenameStruct>()
+                .unwrap()
+        )
+        .unwrap(),
+        serde_json::to_value(
+            Generator::default()
+                .into_root_schema::<RenameStruct2>()
+                .unwrap()
+        )
+        .unwrap(),
     );
 }
 
@@ -194,8 +249,12 @@ struct RenameStructSerialize {
 #[test]
 fn rename_all_serialize_gets_ignored() {
     assert_eq!(
-        serde_json::to_value(Generator::default().into_root_schema::<RenameStructSerialize>())
-            .unwrap(),
+        serde_json::to_value(
+            Generator::default()
+                .into_root_schema::<RenameStructSerialize>()
+                .unwrap()
+        )
+        .unwrap(),
         serde_json::json! {{
             "properties": {
                 "foo_bar": { "type": "boolean" }
@@ -215,7 +274,12 @@ struct RenameStruct3 {
 #[test]
 fn rename_all_typedef_attr() {
     assert_eq!(
-        serde_json::to_value(Generator::default().into_root_schema::<RenameStruct3>()).unwrap(),
+        serde_json::to_value(
+            Generator::default()
+                .into_root_schema::<RenameStruct3>()
+                .unwrap()
+        )
+        .unwrap(),
         serde_json::json! {{
             "properties": {
                 "FOO-BAR": { "type": "boolean" }
@@ -235,7 +299,12 @@ enum RenameEnum {
 #[test]
 fn rename_all_enum() {
     assert_eq!(
-        serde_json::to_value(Generator::default().into_root_schema::<RenameEnum>()).unwrap(),
+        serde_json::to_value(
+            Generator::default()
+                .into_root_schema::<RenameEnum>()
+                .unwrap()
+        )
+        .unwrap(),
         serde_json::json! {{
             "enum": ["FOO-BAR"],
         }}
@@ -252,7 +321,12 @@ enum RenameEnum2 {
 #[test]
 fn rename_all_enum_struct_variants() {
     assert_eq!(
-        serde_json::to_value(Generator::default().into_root_schema::<RenameEnum2>()).unwrap(),
+        serde_json::to_value(
+            Generator::default()
+                .into_root_schema::<RenameEnum2>()
+                .unwrap()
+        )
+        .unwrap(),
         serde_json::json! {{
             "discriminator": "type",
             "mapping": {

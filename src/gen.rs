@@ -29,7 +29,7 @@ use crate::{JsonTypedef, Names};
 ///     x: u32,
 /// }
 ///
-/// let root_schema = Generator::default().into_root_schema::<Foo>();
+/// let root_schema = Generator::default().into_root_schema::<Foo>().unwrap();
 /// let json_schema = serde_json::to_value(&root_schema).unwrap();
 ///
 /// assert_eq!(json_schema, serde_json::json!{ {
@@ -54,7 +54,8 @@ use crate::{JsonTypedef, Names};
 ///     .top_level_ref()
 ///     .naming_short()
 ///     .build()
-///     .into_root_schema::<Foo>();
+///     .into_root_schema::<Foo>()
+///     .unwrap();
 /// let json_schema = serde_json::to_value(&root_schema).unwrap();
 ///
 /// assert_eq!(json_schema, serde_json::json!{ {
@@ -87,7 +88,7 @@ impl Generator {
 
     /// Generate the root schema for the given type according to the settings.
     /// This consumes the generator.
-    pub fn into_root_schema<T: JsonTypedef>(mut self) -> RootSchema {
+    pub fn into_root_schema<T: JsonTypedef>(mut self) -> Result<RootSchema, GenError> {
         let schema = self.sub_schema_impl::<T>(true);
         println!("{:#?}", self.definitions);
         self.clean_up_defs();
@@ -98,10 +99,10 @@ impl Generator {
             .map(|(_, (n, s))| (self.naming_strategy.fun()(&n), s.unwrap()))
             .collect();
 
-        RootSchema {
+        Ok(RootSchema {
             definitions,
             schema,
-        }
+        })
     }
 
     /// Generate a [`Schema`] for a given type, adding definitions to the
@@ -307,4 +308,17 @@ impl Default for DefinitionState {
     fn default() -> Self {
         Self::Processing
     }
+}
+
+/// Schema generation errors.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, thiserror::Error)]
+pub enum GenError {
+    /// A name collision was detected, i.e. two distinct types have the same
+    /// definition/ref identifiers.
+    #[error("definition/ref id \"{id}\" is shared by types `{type1}` and `{type2}`")]
+    NameCollision {
+        type1: String,
+        type2: String,
+        id: String,
+    },
 }

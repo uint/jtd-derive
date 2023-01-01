@@ -9,7 +9,12 @@ struct Recursive {
 #[test]
 fn recursive() {
     assert_eq!(
-        serde_json::to_value(Generator::default().into_root_schema::<Recursive>()).unwrap(),
+        serde_json::to_value(
+            Generator::default()
+                .into_root_schema::<Recursive>()
+                .unwrap()
+        )
+        .unwrap(),
         serde_json::json! {{
             "definitions": {
                 "recursive::Recursive": {

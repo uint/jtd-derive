@@ -27,6 +27,7 @@ fn prefer_inline() {
                 .prefer_inline()
                 .build()
                 .into_root_schema::<Foo>()
+                .unwrap()
         )
         .unwrap(),
         serde_json::json! {{
@@ -61,6 +62,7 @@ fn prefer_ref() {
                 .top_level_ref()
                 .build()
                 .into_root_schema::<Foo>()
+                .unwrap()
         )
         .unwrap(),
         serde_json::json! {{

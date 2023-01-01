@@ -10,7 +10,7 @@ struct Cstruct {
 #[test]
 fn cstruct() {
     assert_eq!(
-        serde_json::to_value(Generator::default().into_root_schema::<Cstruct>()).unwrap(),
+        serde_json::to_value(Generator::default().into_root_schema::<Cstruct>().unwrap()).unwrap(),
         serde_json::json! {{
             "properties": {
                 "bar": { "type": "uint32" },
@@ -32,7 +32,9 @@ struct CstructWithGenerics<'a, T, const N: usize> {
 fn cstruct_with_generics() {
     assert_eq!(
         serde_json::to_value(
-            Generator::default().into_root_schema::<CstructWithGenerics::<'_, u32, 2>>()
+            Generator::default()
+                .into_root_schema::<CstructWithGenerics::<'_, u32, 2>>()
+                .unwrap()
         )
         .unwrap(),
         serde_json::json! {{
@@ -52,7 +54,7 @@ struct Newtype(u32);
 #[test]
 fn newtype_like() {
     assert_eq!(
-        serde_json::to_value(Generator::default().into_root_schema::<Newtype>()).unwrap(),
+        serde_json::to_value(Generator::default().into_root_schema::<Newtype>().unwrap()).unwrap(),
         serde_json::json! {{
             "type": "uint32",
         }}
@@ -68,7 +70,7 @@ struct Nested {
 #[test]
 fn nested() {
     assert_eq!(
-        serde_json::to_value(Generator::default().into_root_schema::<Nested>()).unwrap(),
+        serde_json::to_value(Generator::default().into_root_schema::<Nested>().unwrap()).unwrap(),
         serde_json::json! {{
             "definitions": {
                 "r#struct::Newtype": {

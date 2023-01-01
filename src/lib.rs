@@ -21,7 +21,7 @@
 //!     x: u32,
 //! }
 //!
-//! let root_schema = Generator::default().into_root_schema::<Foo>();
+//! let root_schema = Generator::default().into_root_schema::<Foo>().unwrap();
 //! let json_schema = serde_json::to_value(&root_schema).unwrap();
 //!
 //! assert_eq!(json_schema, serde_json::json!{ {
