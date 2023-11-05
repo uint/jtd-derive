@@ -1,0 +1,29 @@
+error: expected key-value pair
+ --> tests/derive_errors/top_level_metadata.rs:2:20
+  |
+2 | #[typedef(metadata(foo, bar, foo = 2))]
+  |                    ^^^
+
+error: expected key-value pair
+ --> tests/derive_errors/top_level_metadata.rs:2:25
+  |
+2 | #[typedef(metadata(foo, bar, foo = 2))]
+  |                         ^^^
+
+error: expected string literal
+ --> tests/derive_errors/top_level_metadata.rs:2:36
+  |
+2 | #[typedef(metadata(foo, bar, foo = 2))]
+  |                                    ^
+
+error: the `metadata` parameter must be a list of key-value pairs
+ --> tests/derive_errors/top_level_metadata.rs:8:11
+  |
+8 | #[typedef(metadata = "a")]
+  |           ^^^^^^^^^^^^^^
+
+error: the `metadata` parameter must be a list of key-value pairs
+  --> tests/derive_errors/top_level_metadata.rs:14:11
+   |
+14 | #[typedef(metadata)]
+   |           ^^^^^^^^

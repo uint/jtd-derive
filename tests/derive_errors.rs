@@ -13,5 +13,5 @@ fn struct_errors() {
 #[test]
 fn union_errors() {
     let t = trybuild::TestCases::new();
-    t.compile_fail("tests/derive_errors/union.rs");
+    t.compile_fail("tests/derive_errors/*.rs");
 }
