@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
 use itertools::{Either, Itertools as _};
 use sdi::attr::RenameRule;
 use serde_derive_internals as sdi;
-use syn::{Attribute, DeriveInput, Lit, Meta, MetaNameValue, NestedMeta, Type};
+use syn::{Attribute, DeriveInput, Lit, Meta, MetaList, MetaNameValue, NestedMeta, Type};
 
 const ATTR_IDENT: &str = "typedef";
 const SERDE_ATTR_IDENT: &str = "serde";
@@ -16,6 +18,7 @@ pub struct Container {
     pub type_try_from: Option<Type>,
     pub default: bool,
     pub rename_rule: Option<RenameRule>,
+    pub metadata: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -30,10 +33,13 @@ impl Default for TagType {
     }
 }
 
-fn collect_fallible<T>(
+fn collect_fallible<B, T>(
     data: impl Iterator<Item = Result<T, syn::Error>>,
-) -> Result<Vec<T>, syn::Error> {
-    let (good_data, errors): (Vec<_>, Vec<_>) = data.partition_map(|r| match r {
+) -> Result<B, syn::Error>
+where
+    B: Default + Extend<T>,
+{
+    let (good_data, errors): (B, Vec<_>) = data.partition_map(|r| match r {
         Ok(v) => Either::Left(v),
         Err(v) => Either::Right(v),
     });
@@ -179,6 +185,45 @@ impl Container {
                         ))
                     }
                 }
+                "metadata" => {
+                    if let Meta::List(MetaList { nested, .. }) = p {
+                        let metadata = collect_fallible::<HashMap<_, _>, _>(
+                            nested.into_iter().map(|nested_meta| {
+                                if let NestedMeta::Meta(Meta::NameValue(MetaNameValue {
+                                    path,
+                                    lit,
+                                    ..
+                                })) = nested_meta
+                                {
+                                    let key = path.get_ident().map(ToString::to_string).ok_or(
+                                        syn::Error::new_spanned(
+                                            path,
+                                            "expected an ident, not a multi-segment path",
+                                        ),
+                                    )?;
+                                    if let Lit::Str(val) = lit {
+                                        Ok((key, val.value()))
+                                    } else {
+                                        Err(syn::Error::new_spanned(lit, "expected string literal"))
+                                    }
+                                } else {
+                                    Err(syn::Error::new_spanned(
+                                        nested_meta,
+                                        "expected key-value pair",
+                                    ))
+                                }
+                            }),
+                        )?;
+
+                        cont.metadata = metadata;
+                        Ok(())
+                    } else {
+                        Err(syn::Error::new_spanned(
+                            p,
+                            "the `metadata` parameter must be a list of key-value pairs",
+                        ))
+                    }
+                }
                 _ => Err(syn::Error::new_spanned(
                     p.path(),
                     "unknown jtd-derive parameter",
@@ -224,7 +269,7 @@ fn collect_attrs(
         }
     };
 
-    Ok(collect_fallible(attrs.map(parse_attr))?
+    Ok(collect_fallible::<Vec<_>, _>(attrs.map(parse_attr))?
         .into_iter()
         .flatten())
 }
