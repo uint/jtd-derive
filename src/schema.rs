@@ -139,6 +139,15 @@ impl Metadata {
     }
 }
 
+impl<A> Extend<A> for Metadata
+where
+    HashMap<&'static str, serde_json::Value>: Extend<A>,
+{
+    fn extend<T: IntoIterator<Item = A>>(&mut self, iter: T) {
+        self.0.extend(iter)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::json;

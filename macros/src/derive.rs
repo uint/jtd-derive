@@ -1,5 +1,7 @@
 mod context;
 
+use std::collections::HashMap;
+
 use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned};
 use serde_derive_internals::attr::RenameRule;
@@ -89,6 +91,13 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
             quote_spanned! {ident.span()=> compile_error!("jtd-derive does not support unions")}
         }
     };
+    let meta = gen_metadata(&ctx.metadata);
+
+    let res = quote! { {
+        let mut schema = #res;
+        schema.metadata.extend(#meta);
+        schema
+    } };
 
     Ok(parse_quote! {
         impl #impl_generics ::jtd_derive::JsonTypedef for #ident #ty_generics #where_clause {
@@ -244,6 +253,12 @@ fn gen_enum_schema(
             })
         }
     }
+}
+
+fn gen_metadata(meta: &HashMap<String, String>) -> TokenStream {
+    let keys = meta.keys();
+    let values = meta.values();
+    quote! { [#((#keys, #values.parse::<::serde_json::Value>().unwrap())),*] }
 }
 
 fn gen_named_fields(
