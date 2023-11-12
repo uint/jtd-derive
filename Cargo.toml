@@ -3,7 +3,7 @@
 [package]
 name = "jtd-derive"
 description = "Generate JSON Typedef schemas from Rust types"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["Tomasz Kurcz"]
 license = "MIT OR Apache-2.0"
