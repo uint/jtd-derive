@@ -1,4 +1,7 @@
 mod context;
+pub mod field;
+
+use std::collections::HashMap;
 
 use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned};
@@ -7,6 +10,8 @@ use syn::{
     parse_quote, DataEnum, DataStruct, DeriveInput, Fields, FieldsNamed, GenericParam, Generics,
     Ident, ItemImpl,
 };
+
+use crate::{derive::field::Field, iter_ext::IterExt};
 
 use self::context::Container;
 
@@ -89,6 +94,13 @@ pub fn derive(input: DeriveInput) -> Result<ItemImpl, syn::Error> {
             quote_spanned! {ident.span()=> compile_error!("jtd-derive does not support unions")}
         }
     };
+    let meta = gen_metadata(&ctx.metadata);
+
+    let res = quote! { {
+        let mut schema = #res;
+        schema.metadata.extend(#meta);
+        schema
+    } };
 
     Ok(parse_quote! {
         impl #impl_generics ::jtd_derive::JsonTypedef for #ident #ty_generics #where_clause {
@@ -132,7 +144,7 @@ fn gen_struct_schema(
                 ))
                 //}
             } else {
-                Ok(gen_named_fields(ctx, &fields, ctx.rename_rule))
+                gen_named_fields(ctx, &fields, ctx.rename_rule)
             }
         }
         Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
@@ -227,6 +239,7 @@ fn gen_enum_schema(
                     )
                 })
                 .unzip();
+            let variants: Vec<_> = variants.into_iter().collect_fallible()?;
             if let Some(rule) = ctx.rename_rule {
                 for ident in idents.iter_mut() {
                     *ident = rule.apply_to_variant(ident);
@@ -246,16 +259,26 @@ fn gen_enum_schema(
     }
 }
 
+fn gen_metadata(meta: &HashMap<String, String>) -> TokenStream {
+    let keys = meta.keys();
+    let values = meta.values();
+    quote! { [#((#keys, #values.parse::<::serde_json::Value>().unwrap())),*] }
+}
+
 fn gen_named_fields(
     ctx: &Container,
     fields: &FieldsNamed,
     rename_rule: Option<RenameRule>,
-) -> TokenStream {
-    let (mut idents, types): (Vec<_>, Vec<_>) = fields
+) -> Result<TokenStream, syn::Error> {
+    let fields: Vec<_> = fields
         .named
         .iter()
-        .map(|f| (f.ident.as_ref().map(|i| i.to_string()).unwrap(), &f.ty))
-        .unzip();
+        .map(Field::from_syn_field)
+        .collect_fallible()?;
+
+    let mut idents: Vec<_> = fields.iter().map(|f| f.ident.clone()).collect();
+    let types: Vec<_> = fields.iter().map(|f| f.ty.clone()).collect();
+    let metas: Vec<_> = fields.into_iter().map(|f| gen_metadata(&f.meta)).collect();
 
     if let Some(rule) = rename_rule {
         for ident in idents.iter_mut() {
@@ -263,7 +286,11 @@ fn gen_named_fields(
         }
     }
 
-    let expanded_fields = quote! {#((#idents, gen.sub_schema::<#types>())),*};
+    let expanded_fields = quote! {#((#idents, {
+        let mut schema = gen.sub_schema::<#types>();
+        schema.metadata.extend(#metas);
+        schema
+    })),*};
 
     let additional = !ctx.deny_unknown_fields;
 
@@ -273,7 +300,7 @@ fn gen_named_fields(
         (quote! {[#expanded_fields].into()}, quote! {[].into()})
     };
 
-    parse_quote! {
+    Ok(parse_quote! {
         Schema {
             ty: SchemaType::Properties {
                 properties: #prop,
@@ -282,7 +309,7 @@ fn gen_named_fields(
             },
             ..::jtd_derive::schema::Schema::default()
         }
-    }
+    })
 }
 
 fn unwrap_fields_named(fields: &Fields) -> &FieldsNamed {
