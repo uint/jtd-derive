@@ -6,6 +6,7 @@
 //! and access to the derive macro.
 
 mod derive;
+pub(crate) mod iter_ext;
 
 use quote::ToTokens;
 use syn::{parse_macro_input, DeriveInput};

@@ -89,3 +89,53 @@ fn variant_field() {
         }}
     );
 }
+
+#[test]
+fn overwriting() {
+    #[derive(JsonTypedef)]
+    #[allow(unused)]
+    struct Foo {
+        #[typedef(metadata(x = "\"outer\"", y = "{ \"stuff\": 6 }"))]
+        bar: Bar,
+    }
+
+    #[derive(JsonTypedef)]
+    #[allow(unused)]
+    #[typedef(metadata(x = "\"inner\"", z = "{ \"morestuff\": 3 }"))]
+    struct Bar {
+        x: u32,
+    }
+
+    assert_eq!(
+        serde_json::to_value(
+            Generator::builder()
+                .prefer_inline()
+                .build()
+                .into_root_schema::<Foo>()
+                .unwrap()
+        )
+        .unwrap(),
+        serde_json::json! {{
+            "properties": {
+                "bar": {
+                    "properties": {
+                        "x": {
+                            "type": "uint32",
+                        }
+                    },
+                    "additionalProperties": true,
+                    "metadata": {
+                        "x": "outer",
+                        "y": {
+                            "stuff": 6,
+                        },
+                        "z": {
+                            "morestuff": 3,
+                        },
+                    }
+                },
+            },
+            "additionalProperties": true,
+        }}
+    );
+}
