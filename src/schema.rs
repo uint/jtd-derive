@@ -1,7 +1,7 @@
 //! The internal Rust representation of a [_JSON Typedef_](https://jsontypedef.com/)
 //! schema.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use serde::Serialize;
 
@@ -14,8 +14,8 @@ use serde::Serialize;
 pub struct RootSchema {
     /// The top-level
     /// [definitions](https://jsontypedef.com/docs/jtd-in-5-minutes/#ref-schemas).
-    #[serde(skip_serializing_if = "HashMap::is_empty")]
-    pub definitions: HashMap<String, Schema>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub definitions: BTreeMap<String, Schema>,
     /// The top-level schema.
     #[serde(flatten)]
     pub schema: Schema,
@@ -64,10 +64,10 @@ pub enum SchemaType {
     },
     #[serde(rename_all = "camelCase")]
     Properties {
-        #[serde(skip_serializing_if = "HashMap::is_empty")]
-        properties: HashMap<&'static str, Schema>,
-        #[serde(skip_serializing_if = "HashMap::is_empty")]
-        optional_properties: HashMap<&'static str, Schema>,
+        #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+        properties: BTreeMap<&'static str, Schema>,
+        #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+        optional_properties: BTreeMap<&'static str, Schema>,
         #[serde(skip_serializing_if = "std::ops::Not::not")]
         additional_properties: bool,
     },
@@ -77,7 +77,7 @@ pub enum SchemaType {
     Discriminator {
         discriminator: &'static str,
         // Can only contain non-nullable "properties" schemas
-        mapping: HashMap<&'static str, Schema>,
+        mapping: BTreeMap<&'static str, Schema>,
     },
     Ref {
         r#ref: String,
@@ -124,12 +124,12 @@ impl TypeSchema {
 /// Metadata is a freeform map and a way to extend Typedef. The spec doesn't specify
 /// what might go in there. By default, `jtd_derive` doesn't generate any metadata.
 #[derive(Default, Debug, PartialEq, Eq, Clone, Serialize)]
-pub struct Metadata(HashMap<&'static str, serde_json::Value>);
+pub struct Metadata(BTreeMap<&'static str, serde_json::Value>);
 
 impl Metadata {
     /// Construct a [`Metadata`] object from something that can be converted
     /// to the appropriate hashmap.
-    pub fn from_map(m: impl Into<HashMap<&'static str, serde_json::Value>>) -> Self {
+    pub fn from_map(m: impl Into<BTreeMap<&'static str, serde_json::Value>>) -> Self {
         Self(m.into())
     }
 
@@ -141,7 +141,7 @@ impl Metadata {
 
 impl<A> Extend<A> for Metadata
 where
-    HashMap<&'static str, serde_json::Value>: Extend<A>,
+    BTreeMap<&'static str, serde_json::Value>: Extend<A>,
 {
     fn extend<T: IntoIterator<Item = A>>(&mut self, iter: T) {
         self.0.extend(iter)
@@ -161,7 +161,7 @@ mod tests {
                 ty: SchemaType::Empty,
                 ..Schema::default()
             },
-            definitions: HashMap::new(),
+            definitions: BTreeMap::new(),
         };
 
         assert_eq!(serde_json::to_value(&repr).unwrap(), serde_json::json!({}))
@@ -176,7 +176,7 @@ mod tests {
                 },
                 ..Schema::default()
             },
-            definitions: HashMap::new(),
+            definitions: BTreeMap::new(),
         };
 
         assert_eq!(
@@ -195,7 +195,7 @@ mod tests {
                 nullable: true,
                 ..Schema::default()
             },
-            definitions: HashMap::new(),
+            definitions: BTreeMap::new(),
         };
 
         assert_eq!(
@@ -217,7 +217,7 @@ mod tests {
                 },
                 nullable: false,
             },
-            definitions: HashMap::new(),
+            definitions: BTreeMap::new(),
         };
 
         assert_eq!(
@@ -235,7 +235,7 @@ mod tests {
                 },
                 ..Schema::default()
             },
-            definitions: HashMap::new(),
+            definitions: BTreeMap::new(),
         };
 
         assert_eq!(
@@ -259,7 +259,7 @@ mod tests {
                 },
                 ..Schema::default()
             },
-            definitions: HashMap::new(),
+            definitions: BTreeMap::new(),
         };
 
         assert_eq!(
@@ -299,7 +299,7 @@ mod tests {
                 },
                 ..Schema::default()
             },
-            definitions: HashMap::new(),
+            definitions: BTreeMap::new(),
         };
 
         assert_eq!(
@@ -353,7 +353,7 @@ mod tests {
                 },
                 ..Schema::default()
             },
-            definitions: HashMap::new(),
+            definitions: BTreeMap::new(),
         };
 
         assert_eq!(
@@ -385,7 +385,7 @@ mod tests {
                 },
                 ..Schema::default()
             },
-            definitions: HashMap::new(),
+            definitions: BTreeMap::new(),
         };
 
         assert_eq!(
@@ -488,7 +488,7 @@ mod tests {
                 },
                 ..Schema::default()
             },
-            definitions: HashMap::new(),
+            definitions: BTreeMap::new(),
         };
 
         assert_eq!(
