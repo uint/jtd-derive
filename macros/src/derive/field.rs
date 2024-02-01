@@ -12,7 +12,7 @@ pub struct Field {
 
 impl Field {
     pub fn from_syn_field(f: &syn::Field) -> Result<Self, syn::Error> {
-        let ctx = FieldCtx::from_input(&f)?;
+        let ctx = FieldCtx::from_input(f)?;
 
         Ok(Self {
             ty: f.ty.clone(),
