@@ -131,6 +131,12 @@ impl_wrappers! {
     std::net => SocketAddrV6 => String,
 
     std::path => Path => String
+
+}
+
+#[cfg(feature = "url")]
+impl_wrappers!{
+    url => Url => String
 }
 
 impl JsonTypedef for std::path::PathBuf {
