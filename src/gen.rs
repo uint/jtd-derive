@@ -2,7 +2,7 @@
 
 mod naming_strategy;
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt::Debug;
 
 use self::naming_strategy::NamingStrategy;
@@ -98,7 +98,7 @@ impl Generator {
         fn process_defs(
             defs: HashMap<TypeId, (Names, DefinitionState)>,
             ns: &mut NamingStrategy,
-        ) -> Result<HashMap<String, Schema>, GenError> {
+        ) -> Result<BTreeMap<String, Schema>, GenError> {
             // This could probably be optimized somehow.
 
             let defs = defs
