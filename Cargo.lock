@@ -70,7 +70,7 @@ checksum = "fad582f4b9e86b6caa621cabeb0963332d92eea04729ab12892c2533951e6440"
 
 [[package]]
 name = "jtd-derive"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "jtd-derive-macros",
  "serde",
@@ -82,7 +82,7 @@ dependencies = [
 
 [[package]]
 name = "jtd-derive-macros"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "derivative",
  "itertools",
