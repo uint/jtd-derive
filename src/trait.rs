@@ -133,6 +133,11 @@ impl_wrappers! {
     std::path => Path => String
 }
 
+#[cfg(feature = "url")]
+impl_wrappers! {
+    url => Url => String
+}
+
 impl JsonTypedef for std::path::PathBuf {
     fn schema(gen: &mut Generator) -> Schema {
         gen.sub_schema::<std::path::Path>()
