@@ -209,17 +209,12 @@ impl Generator {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 enum Inlining {
     Always,
+    #[default]
     Normal,
     Never,
-}
-
-impl Default for Inlining {
-    fn default() -> Self {
-        Inlining::Normal
-    }
 }
 
 /// Builder for [`Generator`]. For example usage, refer to [`Generator`].
