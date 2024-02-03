@@ -12,9 +12,6 @@ documentation = "https://docs.rs/jtd-derive"
 categories = ["encoding"]
 keywords = ["schema", "codegen", "json"]
 
-[features]
-url = ["dep:url"]
-
 [dependencies]
 jtd-derive-macros = { version = "=0.1.3", path = "macros" }
 serde = { version = "1.0.115", features = ["derive"] }
